@@ -9,6 +9,11 @@ import { LibrosComponent } from './libros/libros.component';
 import { LibroComponent } from './libro/libro.component';
 import { LibrosService } from './services/libros.service';
 import { InicioComponent } from './inicio.components';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { MaterialModule } from './material.module';
+import { RegistrarComponent } from './seguridad/registrar/registrar.component';
+import { LoginComponent } from './seguridad/login/login.component';
+import { FlexLayoutModule } from '@angular/flex-layout';
 
 @NgModule({
     declarations: [
@@ -16,12 +21,17 @@ import { InicioComponent } from './inicio.components';
         UsuarioComponent,
         LibrosComponent,
         LibroComponent,
-        InicioComponent
+        InicioComponent,
+        RegistrarComponent,
+        LoginComponent
     ],
     imports: [
         BrowserModule,
         AppRoutingModule,
-        FormsModule
+        FormsModule,
+        BrowserAnimationsModule,
+        MaterialModule,
+        FlexLayoutModule
     ],
     providers: [LibrosService],
     bootstrap: [AppComponent]

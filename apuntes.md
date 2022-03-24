@@ -1673,7 +1673,370 @@ y errores de los servidores (500–599).
 
 ## Sección 9: Angular Material y Creación de Interfaces Gráficas del Proyecto
 ### 47. Angular Material y Material Design
-2 min
++ **Contenido**: sobre Angular Material y Material Design.
+
+### 48. Agregar Material Design a mi proyecto Angular
++ **Documentación**: https://material.angular.io
++ **Iconos**: https://fonts.google.com/icons?selected=Material+Icons&icon.style=Filled
++ https://material.io
+1. Agregar Material Design al proyecto **mi-web-app**:
+    + $ ng add @angular/material
+    + Would you like to proceed? (Y/n): y
+    + Seleccionar: > Indigo/Pink        [ Preview: https://material.angular.io?theme=indigo-pink ]
+    + ? Set up global Angular Material typography styles? (y/N): y
+    + ? Set up browser animations for Angular Material? (Y/n): y
+
+### 49. Agregar Componente Angular Material
+1. Crear modulo **mi-web-app\src\app\material.module.ts**:
+    ```ts
+    import { NgModule } from '@angular/core';
+    import { MatButtonModule } from '@angular/material/button';
+    import { MatIconModule } from '@angular/material/icon';
+
+    @NgModule({
+    imports: [MatButtonModule, MatIconModule],
+    exports: [MatButtonModule, MatIconModule]
+    })
+
+    export class MaterialModule{}
+    ```
+2. Registrar **MaterialModule** en **mi-web-app\src\app\app.module.ts**:
+    ```ts
+    ≡
+    import { MaterialModule } from './material.module';
+
+    @NgModule({
+        ≡
+        imports: [
+            ≡
+            MaterialModule
+        ],
+        ≡
+    })
+    ≡
+    ```
+3. Modificar **mi-web-app\src\app\app.component.html**:
+    ```html
+    <button mat-raised-button color="primary"> <mat-icon>account_circle</mat-icon> Soluciones++</button>
+    ```
+
+### 50. Estructura del Proyecto
+1. En la raíz del proyecto **mi-web-app** para crear componentes registrar y login y que al mismo tiempo quede registrado en **mi-web-app\src\app\app.module.ts**:
+    + $ ng g c seguridad/registrar --module app.module
+    + $ ng g c seguridad/login --module app.module
+2. Modificar archivo de rutas **mi-web-app\src\app\app-routing.module.ts**:
+    ```ts
+    ≡
+    import { LoginComponent } from './seguridad/login/login.component';
+    import { RegistrarComponent } from './seguridad/registrar/registrar.component';
+
+    const routes: Routes = [
+        ≡
+        { path: 'registrar', component: RegistrarComponent },
+        { path: 'login', component: LoginComponent }
+    ];
+    ≡
+    ```
+3. Modificar **mi-web-app\src\app\app.component.html**:
+    ```html
+    <router-outlet></router-outlet>
+    ```
+
+### 51. Crear Formulario con Angular y Material Design
+1. Diseñar template **mi-web-app\src\app\seguridad\registrar\registrar.component.html**:
+    ```html
+    <section>
+        <form>
+            <mat-form-field>
+                <mat-label>Ingrese e-mail</mat-label>
+                <input type="email" matInput placeholder="solucionespp@gmail.com">
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Ingrese password</mat-label>
+                <input type="password" matInput placeholder="Ingresa un password">
+            </mat-form-field>
+        </form>
+    </section>
+    ```
+2. Modificar **mi-web-app\src\app\material.module.ts** para importar **MatInputModule** y **MatFormFieldModule**:
+    ```ts
+    import { NgModule } from '@angular/core';
+    import { MatButtonModule } from '@angular/material/button';
+    import { MatFormFieldModule } from '@angular/material/form-field';
+    import { MatIconModule } from '@angular/material/icon';
+    import { MatInputModule } from '@angular/material/input';
+
+    @NgModule({
+        imports: [MatButtonModule, MatIconModule, MatInputModule, MatFormFieldModule],
+        exports: [MatButtonModule, MatIconModule, MatInputModule, MatFormFieldModule]
+    })
+
+    export class MaterialModule{}
+    ```
+
+### 52. Flex en Angular
+1. Modificar template **mi-web-app\src\app\seguridad\registrar\registrar.component.html**:
+    ```html
+    <section>
+        <form>
+            ≡
+        </form>
+    </section>
+
+    <section id="contenedor">
+        <div id="elemento1" class="elemento"></div>
+        <div id="elemento2" class="elemento"></div>
+        <div id="elemento3" class="elemento"></div>
+    </section>
+    ```
+2. Establecer hoja de estilo **mi-web-app\src\app\seguridad\registrar\registrar.component.css**:
+    ```css
+    #contenedor {
+        display: flex;
+        width: 100%;
+        height: 700px;
+        border: 1px solid blue;
+        /* flex-direction: column; */
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .elemento {
+        width: 150px;
+        height: 150px;
+        /* flex: 1; */
+    }
+
+    #elemento1 {
+        background-color: red;
+    }
+
+    #elemento2 {
+        background-color: royalblue;
+        /* flex: 2; */
+    }
+
+    #elemento3 {
+        background-color: green;
+    }
+    ```
+
+### 53. Flex en Formularios
++ https://github.com/angular/flex-layout
+1. Instalar flex-loyout en el proyecto **mi-web-app**:
+    + $ npm i -s @angular/flex-layout @angular/cdk
+2. Modificar **mi-web-app\src\app\app.module.ts** para importar **FlexLayoutModule**:
+    ```ts
+    ≡
+    import { FlexLayoutModule } from '@angular/flex-layout';
+
+    @NgModule({
+        ≡
+        imports: [
+            ≡
+            FlexLayoutModule
+        ],
+        ≡
+    })
+    ≡
+    ```
+3. Modificar template **mi-web-app\src\app\seguridad\registrar\registrar.component.html**:
+    ```html
+    <section>
+        <form fxLayout="column" fxLayoutAlign="center center">
+            <mat-form-field>
+                <mat-label>Ingrese e-mail</mat-label>
+                <input type="email" matInput placeholder="solucionespp@gmail.com">
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Ingrese password</mat-label>
+                <input type="password" matInput placeholder="Ingresa un password">
+            </mat-form-field>
+        </form>
+    </section>
+    ```
+4. Modificar estilos **mi-web-app\src\app\seguridad\registrar\registrar.component.css**:
+    ```css
+    mat-form-field{
+        width: 300px;
+    }
+    ```
+
+### 54. Agregar boton submit a Form
+1. Modificar template **mi-web-app\src\app\seguridad\registrar\registrar.component.html**:
+    ```html
+    <section>
+        <form fxLayout="column" fxLayoutAlign="center center" #f="ngForm" (ngSubmit)="registrarUsuario(f)">
+            <mat-form-field>
+                <mat-label>Ingrese e-mail</mat-label>
+                <input type="email" matInput placeholder="solucionespp@gmail.com" ngModel name="email">
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Ingrese password</mat-label>
+                <input type="password" matInput placeholder="Ingresa un password" ngModel name="password">
+            </mat-form-field>
+
+            <button type="submit" mat-raised-button color="primary">Guardar</button>
+        </form>
+    </section>
+    ```
+2. Modificar componente **mi-web-app\src\app\seguridad\registrar\registrar.component.ts**:
+    ```ts
+    import { Component, OnInit } from '@angular/core';
+    import { NgForm } from '@angular/forms';
+
+    @Component({
+        selector: 'app-registrar',
+        templateUrl: './registrar.component.html',
+        styleUrls: ['./registrar.component.css']
+    })
+    export class RegistrarComponent implements OnInit {
+
+        constructor() { }
+
+        ngOnInit(): void {
+        }
+
+        registrarUsuario(form: NgForm){
+            console.log(form);
+        }
+    }
+    ```
+
+### 55. Validaciones en Angular
+1. Modificar template **mi-web-app\src\app\seguridad\registrar\registrar.component.html**:
+    ```ts
+    <section>
+        <form fxLayout="column" fxLayoutAlign="center center" #f="ngForm" (ngSubmit)="registrarUsuario(f)">
+            <mat-form-field>
+                <mat-label>Ingrese e-mail</mat-label>
+                <input
+                    type="email"
+                    matInput
+                    placeholder="solucionespp@gmail.com"
+                    ngModel
+                    name="email"
+                    email
+                    required
+                    #emailInput="ngModel"
+                >
+                <mat-error *ngIf="emailInput.hasError('required')">El email es requerido</mat-error>
+                <mat-error *ngIf="!emailInput.hasError('required')">email invalido</mat-error>
+            </mat-form-field>
+
+            <mat-form-field hintLabel="El password debe tener al menos 7 caracteres">
+                <mat-label>Ingrese password</mat-label>
+                <input
+                    type="password"
+                    matInput
+                    placeholder="Ingresa un password"
+                    ngModel name="password"
+                    required
+                    minlength="7"
+                >
+                <mat-error>El password debe tener al menos 7 caracteres</mat-error>
+            </mat-form-field>
+
+            <button type="submit" mat-raised-button color="primary">Guardar</button>
+        </form>
+    </section>
+    ```
+
+### 56. Implementar validaciones en evento submit
+1. Modificar template **mi-web-app\src\app\seguridad\registrar\registrar.component.html**:
+    ```html
+    <section>
+        <form
+            fxLayout="column"
+            fxLayoutAlign="center center"
+            #f="ngForm"
+            (ngSubmit)="registrarUsuario(f)"
+            fxLayoutGap="10px"
+        >
+            <mat-form-field>
+                <mat-label>Ingrese nombre</mat-label>
+                <input
+                    type="text"
+                    matInput
+                    placeholder="Ingrese su nombre"
+                    ngModel
+                    name="nombre"
+                    required
+                >
+                <mat-error>El nombre es requerido</mat-error>
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Ingrese apellidos</mat-label>
+                <input
+                    type="text"
+                    matInput
+                    placeholder="Ingrese sus apellidos"
+                    ngModel
+                    name="apellidos"
+                    required
+                >
+                <mat-error>Los apellidos son requeridos</mat-error>
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Ingrese un username</mat-label>
+                <input
+                    type="text"
+                    matInput
+                    placeholder="Ingrese un username"
+                    ngModel
+                    name="username"
+                    required
+                >
+                <mat-error>El username es requerido</mat-error>
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Ingrese e-mail</mat-label>
+                <input
+                    type="email"
+                    matInput
+                    placeholder="solucionespp@gmail.com"
+                    ngModel
+                    name="email"
+                    email
+                    required
+                    #emailInput="ngModel"
+                >
+                <mat-error *ngIf="emailInput.hasError('required')">El email es requerido</mat-error>
+                <mat-error *ngIf="!emailInput.hasError('required')">email invalido</mat-error>
+            </mat-form-field>
+
+            <mat-form-field hintLabel="El password debe tener al menos 7 caracteres">
+                <mat-label>Ingrese password</mat-label>
+                <input
+                    type="password"
+                    matInput
+                    placeholder="Ingresa un password"
+                    ngModel name="password"
+                    required
+                    minlength="7"
+                >
+                <mat-error>El password debe tener al menos 7 caracteres</mat-error>
+            </mat-form-field>
+
+            <button type="submit" mat-raised-button color="primary" [disabled]="f.invalid">Guardar</button>
+        </form>
+    </section>
+    ```
+
+
+## Sección 10: Creación de barra de navegación
+### 57. Agregar SideNavBar Componente
+10 min
+
+   
+
 
 
 
@@ -1693,33 +2056,6 @@ y errores de los servidores (500–599).
 
 
 
-
-
-
-
-### 48. Agregar Material Design a mi proyecto Angular
-7 min
-### 49. Agregar Componente Angular Material
-11 min
-### 50. Estructura del Proyecto
-9 min
-### 51. Crear Formulario con Angular y Material Design
-7 min
-### 52. Flex en Angular
-13 min
-### 53. Flex en Formularios
-5 min
-### 54. Agregar boton submit a Form
-6 min
-### 55. Validaciones en Angular
-10 min
-### 56. Implementar validaciones en evento submit
-8 min
-
-
-## Sección 10: Creación de barra de navegación
-### 57. Agregar SideNavBar Componente
-10 min
 ### 58. Toolbar en nuestra App
 7 min
 ### 59. Agregar estilos al toolbar
@@ -1730,6 +2066,9 @@ y errores de los servidores (500–599).
 11 min
 ### 62. Creacion de componente barra de menu
 18 min
+
+
+## Sección 11: Seguridad en Angular
 ### 63. Creacion de Formulario Login
 9 min
 ### 64. Crear Interface y Servicio de Seguridad
