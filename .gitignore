@@ -1,1 +1,5 @@
 /servidor/node_modules
+/BackendNode/node_modules
+/BackendNode/config/config.env
+/00recursos
+credenciales.md
