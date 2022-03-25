@@ -1,1 +1,42 @@
-<p>login works!</p>
+<section fxLayoutAlign="center">
+    <mat-card>
+        <form
+            fxLayout="column"
+            fxLayoutAlign="center center"
+            fxLayoutGap="10px"
+            #f="ngForm"
+            (ngSubmit)="loginUsuario(f)"
+        >
+            <mat-form-field>
+                <mat-label>Ingrese e-mail</mat-label>
+                <input
+                    type="email"
+                    matInput
+                    placeholder="solucionespp@gmail.com"
+                    ngModel
+                    name="email"
+                    email
+                    required
+                    #emailInput="ngModel"
+                >
+                <mat-error *ngIf="emailInput.hasError('required')">El email es requerido</mat-error>
+                <mat-error *ngIf="!emailInput.hasError('required')">email invalido</mat-error>
+            </mat-form-field>
+
+            <mat-form-field hintLabel="El password debe tener al menos 7 caracteres">
+                <mat-label>Ingrese password</mat-label>
+                <input
+                    type="password"
+                    matInput
+                    placeholder="Ingresa un password"
+                    ngModel name="password"
+                    required
+                    minlength="7"
+                >
+                <mat-error>El password debe tener al menos 7 caracteres</mat-error>
+            </mat-form-field>
+            <button type="submit" mat-raised-button color="primary" [disabled]="f.invalid">Ingresar</button>
+        </form>
+    </mat-card>
+</section>
+

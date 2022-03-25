@@ -2379,9 +2379,567 @@ y errores de los servidores (500–599).
 
 ## Sección 11: Seguridad en Angular
 ### 63. Creacion de Formulario Login
-9 min
+1. Modificar template **mi-web-app\src\app\seguridad\login\login.component.html**:
+    ```html
+    <section fxLayoutAlign="center">
+        <mat-card>
+            <form
+                fxLayout="column"
+                fxLayoutAlign="center center"
+                fxLayoutGap="10px"
+            >
+                <mat-form-field>
+                    <mat-label>Ingrese e-mail</mat-label>
+                    <input
+                        type="email"
+                        matInput
+                        placeholder="solucionespp@gmail.com"
+                        ngModel
+                        name="email"
+                        email
+                        required
+                    >
+                    <mat-error>El email es requerido</mat-error>
+                </mat-form-field>
 
+                <mat-form-field hintLabel="El password debe tener al menos 7 caracteres">
+                    <mat-label>Ingrese password</mat-label>
+                    <input
+                        type="password"
+                        matInput
+                        placeholder="Ingresa un password"
+                        ngModel 
+                        name="password"
+                        required
+                        minlength="7"
+                    >
+                    <mat-error>El password debe tener al menos 7 caracteres</mat-error>
+                </mat-form-field>
+                <button type="submit" mat-raised-button color="primary">Ingresar</button>
+            </form>
+        </mat-card>
+    </section>
+    ```
+2. Agregar **MatCardModule** en **mi-web-app\src\app\material.module.ts**:
+    ```ts
+    ≡
+    import { MatCardModule } from '@angular/material/card';
 
+    @NgModule({
+        imports: [
+            ≡
+            MatCardModule
+        ],
+        exports: [
+            ≡
+            MatCardModule
+        ],
+    })
+    ≡
+    ```
+3. Establecer estilos en **mi-web-app\src\app\seguridad\login\login.component.css**:
+    ```css
+    mat-form-field{
+        width: 300px;
+    }
+
+    mat-card {
+        width: 300px;
+        text-align: center;
+        margin-top: 40px;
+    }
+    ```
+
+### 64. Crear Interface y Servicio de Seguridad
+1. Crear modelo **mi-web-app\src\app\seguridad\usuario.model.ts**:
+    ```ts
+    export interface Usuario {
+        nombre: string;
+        apellidos: string;
+        username: string;
+        email: string;
+        usuarioId: string;
+        password: string;
+    }
+    ```
+2. Crear modelo **mi-web-app\src\app\seguridad\login-data.model.ts**:
+    ```ts
+    export interface LoginData {
+        email: string;
+        password: string;
+    }
+    ```
+3. Crear servicio **mi-web-app\src\app\seguridad\seguridad.service.ts**:
+    ```ts
+    import { Usuario } from './usuario.model';
+    import { LoginData } from './login-data.model';
+
+    export class SeguridadService {
+        private usuario: Usuario;
+
+        registrarUsuario(usr: Usuario){
+            this.usuario = {
+                email: usr.email,
+                usuarioId: Math.round(Math.random() * 10000).toString(),
+                nombre: usr.nombre,
+                apellidos: usr.apellidos,
+                username: usr.username,
+                password: ''
+            };
+        }
+
+        login(loginData: LoginData){
+            this.usuario = {
+                email: loginData.email,
+                usuarioId: Math.round(Math.random() * 10000).toString(),
+                nombre: '',
+                apellidos: '',
+                username: '',
+                password: ''
+            };
+        }
+
+        salirSesion(){
+            this.usuario = null;
+        }
+
+        obtenerUsuario() {
+            return {...this.usuario};
+        }
+    }
+    ```
+
+### 65. Implementando seguridad en Angular
+1. Modificar **mi-web-app\src\app\seguridad\login\login.component.html**:
+    ```html
+    <section fxLayoutAlign="center">
+        <mat-card>
+            <form
+                fxLayout="column"
+                fxLayoutAlign="center center"
+                fxLayoutGap="10px"
+                #f="ngForm"
+                (ngSubmit)="loginUsuario(f)"
+            >
+                <mat-form-field>
+                    <mat-label>Ingrese e-mail</mat-label>
+                    <input
+                        type="email"
+                        matInput
+                        placeholder="solucionespp@gmail.com"
+                        ngModel
+                        name="email"
+                        email
+                        required
+                        #emailInput="ngModel"
+                    >
+                    <mat-error *ngIf="emailInput.hasError('required')">El email es requerido</mat-error>
+                    <mat-error *ngIf="!emailInput.hasError('required')">email invalido</mat-error>
+                </mat-form-field>
+
+                <mat-form-field hintLabel="El password debe tener al menos 7 caracteres">
+                    <mat-label>Ingrese password</mat-label>
+                    <input
+                        type="password"
+                        matInput
+                        placeholder="Ingresa un password"
+                        ngModel name="password"
+                        required
+                        minlength="7"
+                    >
+                    <mat-error>El password debe tener al menos 7 caracteres</mat-error>
+                </mat-form-field>
+                <button type="submit" mat-raised-button color="primary" [disabled]="f.invalid">Ingresar</button>
+            </form>
+        </mat-card>
+    </section>
+    ```
+2. Modificar **mi-web-app\src\app\seguridad\login\login.component.ts**:
+    ```ts
+    export interface LoginData {
+        email: string;
+        password: string;
+    }
+    ```
+3. Importar **SeguridadService** en **mi-web-app\src\app\app.module.ts**:
+    ```ts
+    ≡
+    import { SeguridadService } from './seguridad/seguridad.service';
+
+    @NgModule({
+        ≡
+        providers: [LibrosService, SeguridadService],
+        ≡
+    })
+    ≡
+    ```
+4. Modificar **mi-web-app\src\app\seguridad\registrar\registrar.component.ts**:
+    ```ts
+    import { Component, OnInit } from '@angular/core';
+    import { NgForm } from '@angular/forms';
+    import { SeguridadService } from '../seguridad.service';
+
+    @Component({
+        selector: 'app-registrar',
+        templateUrl: './registrar.component.html',
+        styleUrls: ['./registrar.component.css']
+    })
+    export class RegistrarComponent implements OnInit {
+
+        constructor(private seguridadService: SeguridadService) { }
+
+        ngOnInit(): void {}
+
+        registrarUsuario(form: NgForm) {
+            console.log(form);
+            this.seguridadService.registrarUsuario({
+                email: form.value.email,
+                password: form.value.password,
+                apellidos: form.value.apellidos,
+                nombre: form.value.nombre,
+                username: form.value.username,
+                usuarioId: ''
+            });
+        }
+    }
+    ```
+
+### 66. Manejo de Menu con Sesion
+1. Modificar **mi-web-app\src\app\seguridad\seguridad.service.ts**:
+    ```ts
+    import { Subject } from 'rxjs';
+    import { Usuario } from './usuario.model';
+    import { LoginData } from './login-data.model';
+
+    export class SeguridadService {
+        seguridadCambio = new Subject<boolean>();
+
+        private usuario: Usuario;
+
+        registrarUsuario(usr: Usuario){
+            this.usuario = {
+                email: usr.email,
+                usuarioId: Math.round(Math.random() * 10000).toString(),
+                nombre: usr.nombre,
+                apellidos: usr.apellidos,
+                username: usr.username,
+                password: ''
+            };
+            this.seguridadCambio.next(true);
+        }
+
+        login(loginData: LoginData){
+            this.usuario = {
+                email: loginData.email,
+                usuarioId: Math.round(Math.random() * 10000).toString(),
+                nombre: '',
+                apellidos: '',
+                username: '',
+                password: ''
+            };
+            this.seguridadCambio.next(true);
+        }
+
+        salirSesion(){
+            this.usuario = null;
+            this.seguridadCambio.next(false);
+        }
+
+        obtenerUsuario() {
+            return {...this.usuario};
+        }
+    }
+    ```
+2. Modificar **mi-web-app\src\app\navegacion\barra\barra.component.ts**:
+    ```ts
+    import { Component, EventEmitter, OnInit, Output, OnDestroy } from '@angular/core';
+    import { Subscription } from 'rxjs';
+    import { SeguridadService } from '../../seguridad/seguridad.service';
+
+    @Component({
+        selector: 'app-barra',
+        templateUrl: './barra.component.html',
+        styleUrls: ['./barra.component.css']
+    })
+    export class BarraComponent implements OnInit, OnDestroy {
+        @Output() menuToggle = new EventEmitter<void>();
+        estadoUsuario: boolean;
+        usuarioSubcription: Subscription;
+
+        constructor(private seguridadServicio: SeguridadService) { }
+
+        ngOnInit(): void {
+            this.usuarioSubcription = this.seguridadServicio.seguridadCambio.subscribe(status => {
+                this.estadoUsuario = status;
+            });
+        }
+
+        onMenuToggleDispatch() {
+            this.menuToggle.emit()
+        }
+
+        ngOnDestroy() {
+            this.usuarioSubcription.unsubscribe();
+        }
+    }
+    ```
+3. Modificar **mi-web-app\src\app\navegacion\barra\barra.component.html**:
+    ```html
+    <mat-toolbar color="primary">
+        <button mat-icon-button (click)="onMenuToggleDispatch()">
+            <mat-icon>menu</mat-icon>
+        </button>
+        <span>Libros Soluciones++</span>
+        <div fxFlex fxLayout fxLayoutAlign="flex-end" fxHide.xs>
+            <ul fxLayout="row" fxLayoutGap="10px" class="navegacion-menu">
+                <li *ngIf="!estadoUsuario"><a routerLink="/registrar">Registrar</a></li>
+                <li *ngIf="!estadoUsuario"><a routerLink="/login">Login</a></li>
+                <li *ngIf="estadoUsuario"><a routerLink="/">Home</a></li>
+            </ul>
+        </div>
+    </mat-toolbar>
+    ```
+
+### 67. Manejo de Salir Sesion
+1. Modificar **mi-web-app\src\app\seguridad\seguridad.service.ts**:
+    ```ts
+    import { Subject } from 'rxjs';
+    import { Usuario } from './usuario.model';
+    import { LoginData } from './login-data.model';
+    import { Router } from '@angular/router';
+    import { Injectable } from '@angular/core';
+
+    @Injectable()
+    export class SeguridadService {
+        seguridadCambio = new Subject<boolean>();
+        private usuario: Usuario;
+
+        constructor(private router: Router){
+
+        }
+
+        registrarUsuario(usr: Usuario){
+            this.usuario = {
+                email: usr.email,
+                usuarioId: Math.round(Math.random() * 10000).toString(),
+                nombre: usr.nombre,
+                apellidos: usr.apellidos,
+                username: usr.username,
+                password: ''
+            };
+            this.seguridadCambio.next(true);
+            this.router.navigate(['/']);
+        }
+
+        login(loginData: LoginData){
+            this.usuario = {
+                email: loginData.email,
+                usuarioId: Math.round(Math.random() * 10000).toString(),
+                nombre: '',
+                apellidos: '',
+                username: '',
+                password: ''
+            };
+            this.seguridadCambio.next(true);
+            this.router.navigate(['/']);
+        }
+
+        salirSesion(){
+            this.usuario = null;
+            this.seguridadCambio.next(false);
+            this.router.navigate(['/login']);
+        }
+
+        obtenerUsuario() {
+            return {...this.usuario};
+        }
+    }
+    ```
+2. Modificar **mi-web-app\src\app\navegacion\barra\barra.component.html**:
+    ```html
+    <mat-toolbar color="primary">
+        <button mat-icon-button (click)="onMenuToggleDispatch()">
+            <mat-icon>menu</mat-icon>
+        </button>
+        <span>Libros Soluciones++</span>
+        <div fxFlex fxLayout fxLayoutAlign="flex-end" fxHide.xs>
+            <ul fxLayout="row" fxLayoutGap="10px" class="navegacion-menu">
+                <li *ngIf="!estadoUsuario"><a routerLink="/registrar">Registrar</a></li>
+                <li *ngIf="!estadoUsuario"><a routerLink="/login">Login</a></li>
+                <li *ngIf="estadoUsuario"><a routerLink="/">Home</a></li>
+                <li (click)="terminarSesion()" *ngIf="estadoUsuario"><a routerLink="/">Salir</a></li>
+            </ul>
+        </div>
+    </mat-toolbar>
+    ```
+3. Modificar **mi-web-app\src\app\navegacion\barra\barra.component.ts**:
+    ```ts
+    import { Component, EventEmitter, OnInit, Output, OnDestroy } from '@angular/core';
+    import { Subscription } from 'rxjs';
+    import { SeguridadService } from '../../seguridad/seguridad.service';
+
+    @Component({
+        selector: 'app-barra',
+        templateUrl: './barra.component.html',
+        styleUrls: ['./barra.component.css']
+    })
+    export class BarraComponent implements OnInit, OnDestroy {
+        @Output() menuToggle = new EventEmitter<void>();
+        estadoUsuario: boolean;
+        usuarioSubcription: Subscription;
+
+        constructor(private seguridadServicio: SeguridadService) { }
+
+        ngOnInit(): void {
+            this.usuarioSubcription = this.seguridadServicio.seguridadCambio.subscribe(status => {
+                this.estadoUsuario = status;
+            });
+        }
+
+        onMenuToggleDispatch() {
+            this.menuToggle.emit()
+        }
+
+        ngOnDestroy() {
+            this.usuarioSubcription.unsubscribe();
+        }
+
+        terminarSesion() {
+            this.seguridadServicio.salirSesion();
+        }
+    }
+    ```
+4. Modificar **mi-web-app\src\app\navegacion\menu-lista\menu-lista.component.html**:
+    ```html
+    <mat-nav-list>
+        <a mat-list-item routerLink="/" (click)="onCerrarMenu()" *ngIf="estadoUsuario">
+            <mat-icon>home</mat-icon>
+            <span class="navegacion-list-label">Inicio</span>
+        </a>
+        <a mat-list-item routerLink="/registrar" (click)="onCerrarMenu()" *ngIf="!estadoUsuario">
+            <mat-icon>how_to_reg</mat-icon>
+            <span class="navegacion-list-label">Registrar</span>
+        </a>
+        <a mat-list-item routerLink="/login" (click)="onCerrarMenu()" *ngIf="!estadoUsuario">
+            <mat-icon>login</mat-icon>
+            <span class="navegacion-list-label">Ingresar</span>
+        </a>
+
+        <mat-list-item>
+            <button mat-icon-button (click)="terminarSesionMenu()" *ngIf="estadoUsuario">
+            <mat-icon>eject</mat-icon>
+            <span class="navegacion-list-label">Salir</span>
+            </button>
+        </mat-list-item>
+    </mat-nav-list>
+    ```
+5. Modificar **mi-web-app\src\app\navegacion\menu-lista\menu-lista.component.ts**:
+    ```ts
+    import { Component, EventEmitter, OnDestroy, OnInit, Output } from '@angular/core';
+    import { Subscription } from 'rxjs';
+    import { SeguridadService } from '../../seguridad/seguridad.service';
+
+    @Component({
+        selector: 'app-menu-lista',
+        templateUrl: './menu-lista.component.html',
+        styleUrls: ['./menu-lista.component.css']
+    })
+    export class MenuListaComponent implements OnInit, OnDestroy{
+        @Output() menuToggle = new EventEmitter<void>();
+        estadoUsuario: boolean;
+        usuarioSubcription: Subscription;
+
+        constructor(private seguridadService: SeguridadService) { }
+
+        ngOnInit(): void {
+            this.usuarioSubcription = this.seguridadService.seguridadCambio.subscribe(status => {
+                this.estadoUsuario = status;
+            });
+        }
+
+        onCerrarMenu() {
+            this.menuToggle.emit()
+        }
+
+        terminarSesionMenu() {
+            this.onCerrarMenu();
+            this.seguridadService.salirSesion();
+        }
+
+        ngOnDestroy() {
+            this.usuarioSubcription.unsubscribe();
+        }
+    }
+    ```
+
+### 68. Seguridad en componentes Angular
+1. Crear **mi-web-app\src\app\seguridad\seguridad.router.ts**:
+    ```ts
+    import {
+        ActivatedRouteSnapshot,
+        CanActivate,
+        Router,
+        RouterStateSnapshot,
+    } from '@angular/router';
+    import { Injectable } from '@angular/core';
+    import { SeguridadService } from './seguridad.service';
+
+    @Injectable()
+    export class SeguridadRouter implements CanActivate {
+
+        constructor(
+            private seguridadService: SeguridadService,
+            private router: Router
+        ) {}
+
+        canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot) {
+            if (this.seguridadService.onSesion()) {
+                return true;
+            } else {
+                this.router.navigate(['/login']);
+                return false;
+            }
+        }
+    }
+    ```
+2. Modificar **mi-web-app\src\app\seguridad\seguridad.service.ts**:
+    ```ts
+    ≡
+    export class SeguridadService {
+        ≡
+        onSesion(){
+            return this.usuario != null;
+        }
+    }
+    ```
+3. Modificar **mi-web-app\src\app\app-routing.module.ts**:
+    ```ts
+    import { NgModule } from '@angular/core';
+    import { RouterModule, Routes } from '@angular/router';
+    import { InicioComponent } from './inicio.components';
+    import { LibrosComponent } from './libros/libros.component';
+    import { LoginComponent } from './seguridad/login/login.component';
+    import { RegistrarComponent } from './seguridad/registrar/registrar.component';
+    import { SeguridadRouter } from './seguridad/seguridad.router';
+
+    const routes: Routes = [
+        { path: '', component: InicioComponent, canActivate: [SeguridadRouter] },
+        { path: 'libros', component: LibrosComponent },
+        { path: 'registrar', component: RegistrarComponent },
+        { path: 'login', component: LoginComponent }
+    ];
+
+    @NgModule({
+        imports: [RouterModule.forRoot(routes)],
+        exports: [RouterModule],
+        providers: [SeguridadRouter]
+    })
+    export class AppRoutingModule { }
+    ```
+
+## Sección 12: Mentenimiento de la App con Angular
+### 69. Crear Libro Service
+6 min
    
 
 
@@ -2403,21 +2961,8 @@ y errores de los servidores (500–599).
 
 
 
-### 64. Crear Interface y Servicio de Seguridad
-11 min
-### 65. Implementando seguridad en Angular
-10 min
-### 66. Manejo de Menu con Sesion
-15 min
-### 67. Manejo de Salir Sesion
-16 min
-### 68. Seguridad en componentes Angular
-12 min
 
 
-## Sección 12: Mentenimiento de la App con Angular
-### 69. Crear Libro Service
-6 min
 ### 70. Agregar Servicio Book
 6 min
 ### 71. Agregar Material Table
@@ -2444,6 +2989,9 @@ y errores de los servidores (500–599).
 19 min
 ### 82. Agregar Select - Combobox
 7 min
+
+
+## Sección 13: Integración con Backend
 ### 83. Definicion de Url Base en Angular
 1 min
 ### 84. Consultar data desde el servidor backend en Angular
@@ -2462,6 +3010,9 @@ y errores de los servidores (500–599).
 10 min
 ### 91. Paginacion: Busquedas con filtros
 13 min
+
+
+## Sección 14: Node Seguridad
 ### 92. Seguridad en NodeJS
 8 min
 ### 93. Creacion de Controllers y Rutas
@@ -2478,6 +3029,8 @@ y errores de los servidores (500–599).
 14 min
 ### 99. Implementar seguridad en Rutas y Controllers
 11 min
+
+## Sección 15: Angular: Implementar Seguridad
 ### 100. Seguridad en Componentes Angular
 9 min
 ### 101. Interceptor Http en Angular para JWT
