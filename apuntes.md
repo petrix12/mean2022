@@ -2033,7 +2033,354 @@ y errores de los servidores (500–599).
 
 ## Sección 10: Creación de barra de navegación
 ### 57. Agregar SideNavBar Componente
-10 min
+1. Implementar **MatSidenavModule** en **mi-web-app\src\app\material.module.ts**:
+    ```ts
+    ≡
+    import { MatSidenavModule } from '@angular/material/sidenav';
+
+    @NgModule({
+        ≡
+        exports: [
+            ≡
+            MatSidenavModule,
+        ],
+    })
+    ≡
+    ```
+2. Modificar **mi-web-app\src\app\app.component.html**:
+    ```html
+    <mat-sidenav-container>
+        <mat-sidenav #menu role="navigation">
+            <p>Elemento Sidenav</p>
+        </mat-sidenav>
+        <mat-sidenav-content>
+            <button (click)="menu.toggle()">Abreme</button>
+            <router-outlet></router-outlet>
+        </mat-sidenav-content>
+    </mat-sidenav-container>
+    ```
+3. Modificar componente **mi-web-app\src\app\app.component.ts**:
+    ```ts
+    ≡
+    export class AppComponent {
+        abrirMenu = false;
+    }
+    ```
+
+### 58. Toolbar en nuestra App
+1. Agregar **MatToolbarModule** en **mi-web-app\src\app\material.module.ts**:
+    ```ts
+    ≡
+    import { MatToolbarModule } from '@angular/material/toolbar';
+    ≡
+    @NgModule({
+        imports: [
+            ≡
+            MatToolbarModule
+        ],    
+        exports: [
+            ≡
+            MatToolbarModule
+        ],
+    })
+    ≡
+    ```
+2. Modificar template **mi-web-app\src\app\app.component.html**:
+    ```html
+    <mat-sidenav-container>
+        <mat-sidenav #menu role="navigation">
+            <p>Elemento Sidenav</p>
+        </mat-sidenav>
+        <mat-sidenav-content>
+            <mat-toolbar color="primary">
+                <button mat-icon-button (click)="menu.toggle()">
+                    <mat-icon>menu</mat-icon>
+                </button>
+                <span>Libros Soluciones++</span>
+                <a routerLink="/registrar">Registrar</a>
+                <a routerLink="/login">Login</a>
+                <a routerLink="/">Home</a>
+            </mat-toolbar>
+            <main>
+                <router-outlet></router-outlet>
+            </main>
+        </mat-sidenav-content>
+    </mat-sidenav-container>
+    ```
+
+### 59. Agregar estilos al toolbar
+1. Agregar estilos en **mi-web-app\src\app\app.component.css**:
+    ```css
+    mat-sidenav-container, mat-sidenav-content, mat-sidenav {
+        height: 100%;
+    }
+
+    mat-sidenav {
+        width: 250px;
+    }
+
+    a {
+        text-decoration: none;
+        color: white;
+    }
+
+    a:hover, a:active {
+        color: #DBCDE6;
+    }
+
+    .navegacion-menu {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    ```
+2. Modificar template **mi-web-app\src\app\app.component.html**:
+    ```html
+    <mat-sidenav-container>
+        <mat-sidenav #menu role="navigation">
+            <p>Elemento Sidenav</p>
+        </mat-sidenav>
+        <mat-sidenav-content>
+            <mat-toolbar color="primary">
+                <button mat-icon-button (click)="menu.toggle()">
+                    <mat-icon>menu</mat-icon>
+                </button>
+                <span>Libros Soluciones++</span>
+                <div fxFlex fxLayout fxLayoutAlign="flex-end">
+                    <ul fxLayout="row" fxLayoutGap="10px" class="navegacion-menu">
+                        <li><a routerLink="/registrar">Registrar</a></li>
+                        <li><a routerLink="/login">Login</a></li>
+                        <li><a routerLink="/">Home</a></li>
+                    </ul>
+                </div>
+            </mat-toolbar>
+            <main>
+                <router-outlet></router-outlet>
+            </main>
+        </mat-sidenav-content>
+    </mat-sidenav-container>
+    ```
+
+### 60. Angular responsive
++ https://github.com/angular/flex-layout/wiki/Responsive-API
+1. Modificar template **mi-web-app\src\app\app.component.html**:
+    ```html
+    ≡
+    <mat-toolbar color="primary">
+        ≡
+        <span>Libros Soluciones++</span>
+        <div fxFlex fxLayout fxLayoutAlign="flex-end" fxHide.xs>
+            ≡
+        </div>
+    </mat-toolbar>
+    ≡
+    ```
+
+### 61. Agregar Menu a la barra de navegacion
++ https://material.angular.io/components/list/overview
+1. Registrar **MatListModule** en **mi-web-app\src\app\material.module.ts**:
+    ```ts
+    ≡
+    import { MatListModule } from '@angular/material/list';
+
+    @NgModule({
+        imports: [
+            ≡
+            MatListModule
+        ],
+        exports: [
+            ≡
+            MatListModule
+        ],
+    })
+    ≡
+    ```
+2. Modificar template **mi-web-app\src\app\app.component.html**:
+    ```html
+    ≡
+    <mat-sidenav #menu role="navigation">
+        <mat-nav-list>
+            <a mat-list-item routerLink="/" (click)="menu.close()">
+                <mat-icon>home</mat-icon>
+                <span class="navegacion-list-label">Inicio</span>
+            </a>
+            <a mat-list-item routerLink="/registrar" (click)="menu.close()">
+                <mat-icon>how_to_reg</mat-icon>
+                <span class="navegacion-list-label">Registrar</span>
+            </a>
+            <a mat-list-item routerLink="/login" (click)="menu.close()">
+                <mat-icon>login</mat-icon>
+                <span class="navegacion-list-label">Ingresar</span>
+            </a>
+        </mat-nav-list>
+    </mat-sidenav>
+    ≡
+    ```
+3. Agregar estilos en **mi-web-app\src\app\app.component.css**:
+    ```css
+    ≡
+    .navegacion-list-label {
+        display: inline-block;
+        padding-left: 6px;
+    }
+    ```
+
+### 62. Creacion de componente barra de menu
+1. Generar componente **barra** y **menu-lista** y que se agregen a la configuración del proyecto **mi-web-app**:
+    + $ ng g c navegacion/barra --module app.module
+    + $ ng g c navegacion/menu-lista --module app.module
+2. Modificar **mi-web-app\src\app\app.component.html**:
+    ```html
+    <mat-sidenav-container>
+        <mat-sidenav #menu role="navigation">
+            <app-menu-lista (menuToggle)="menu.toggle()"></app-menu-lista>
+        </mat-sidenav>
+        <mat-sidenav-content>
+            <app-barra (menuToggle)="menu.toggle()"></app-barra>
+            <main>
+                <router-outlet></router-outlet>
+            </main>
+        </mat-sidenav-content>
+    </mat-sidenav-container>
+    ```
+3. Diseñar template **mi-web-app\src\app\navegacion\menu-lista\menu-lista.component.html**:
+    ```html
+    <mat-nav-list>
+        <a mat-list-item routerLink="/" (click)="onCerrarMenu()">
+            <mat-icon>home</mat-icon>
+            <span class="navegacion-list-label">Inicio</span>
+        </a>
+        <a mat-list-item routerLink="/registrar" (click)="onCerrarMenu()">
+            <mat-icon>how_to_reg</mat-icon>
+            <span class="navegacion-list-label">Registrar</span>
+        </a>
+        <a mat-list-item routerLink="/login" (click)="onCerrarMenu()">
+            <mat-icon>login</mat-icon>
+            <span class="navegacion-list-label">Ingresar</span>
+        </a>
+    </mat-nav-list>
+    ```
+4. Diseñar template **mi-web-app\src\app\navegacion\barra\barra.component.html**:
+    ```html
+    <mat-toolbar color="primary">
+        <button mat-icon-button (click)="onMenuToggleDispatch()">
+            <mat-icon>menu</mat-icon>
+        </button>
+        <span>Libros Soluciones++</span>
+        <div fxFlex fxLayout fxLayoutAlign="flex-end" fxHide.xs>
+            <ul fxLayout="row" fxLayoutGap="10px" class="navegacion-menu">
+                <li><a routerLink="/registrar">Registrar</a></li>
+                <li><a routerLink="/login">Login</a></li>
+                <li><a routerLink="/">Home</a></li>
+            </ul>
+        </div>
+    </mat-toolbar>
+    ```
+5. Modificar hoja de estilo **mi-web-app\src\app\app.component.css**:
+    ```css
+    mat-sidenav-container, mat-sidenav-content, mat-sidenav {
+        height: 100%;
+    }
+
+    mat-sidenav {
+        width: 250px;
+    }
+    ```
+6. Establecer estilos en **mi-web-app\src\app\navegacion\menu-lista\menu-lista.component.css**:
+    ```css
+    a {
+        text-decoration: none;
+        color: white;
+    }
+
+    a:hover, a:active {
+        color: #DBCDE6;
+    }
+
+    .navegacion-menu {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .navegacion-list-label {
+        display: inline-block;
+        padding-left: 6px;
+    }
+    ```
+7. Establecer estilos en **mi-web-app\src\app\navegacion\barra\barra.component.css**:
+    ```css
+    a {
+        text-decoration: none;
+        color: white;
+    }
+
+    a:hover, a:active {
+        color: #DBCDE6;
+    }
+
+    .navegacion-menu {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .navegacion-list-label {
+        display: inline-block;
+        padding-left: 6px;
+    }
+    ```
+8. Modificar componente **mi-web-app\src\app\navegacion\barra\barra.component.ts**:
+    ```ts
+    import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+
+    @Component({
+        selector: 'app-barra',
+        templateUrl: './barra.component.html',
+        styleUrls: ['./barra.component.css']
+    })
+    export class BarraComponent implements OnInit {
+        @Output() menuToggle = new EventEmitter<void>();
+
+        constructor() { }
+
+        ngOnInit(): void {
+        }
+
+        onMenuToggleDispatch() {
+            this.menuToggle.emit()
+        }
+
+    }
+    ```
+9.  Modificar componente **mi-web-app\src\app\navegacion\menu-lista\menu-lista.component.ts**:
+    ```ts
+    import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+
+    @Component({
+        selector: 'app-menu-lista',
+        templateUrl: './menu-lista.component.html',
+        styleUrls: ['./menu-lista.component.css']
+    })
+    export class MenuListaComponent implements OnInit {
+        @Output() menuToggle = new EventEmitter<void>();
+
+        constructor() { }
+
+        ngOnInit(): void {
+        }
+
+        onCerrarMenu() {
+            this.menuToggle.emit()
+        }
+    }
+    ```
+
+
+## Sección 11: Seguridad en Angular
+### 63. Creacion de Formulario Login
+9 min
+
 
    
 
@@ -2056,21 +2403,6 @@ y errores de los servidores (500–599).
 
 
 
-### 58. Toolbar en nuestra App
-7 min
-### 59. Agregar estilos al toolbar
-10 min
-### 60. Angular responsive
-5 min
-### 61. Agregar Menu a la barra de navegacion
-11 min
-### 62. Creacion de componente barra de menu
-18 min
-
-
-## Sección 11: Seguridad en Angular
-### 63. Creacion de Formulario Login
-9 min
 ### 64. Crear Interface y Servicio de Seguridad
 11 min
 ### 65. Implementando seguridad en Angular
@@ -2081,6 +2413,9 @@ y errores de los servidores (500–599).
 16 min
 ### 68. Seguridad en componentes Angular
 12 min
+
+
+## Sección 12: Mentenimiento de la App con Angular
 ### 69. Crear Libro Service
 6 min
 ### 70. Agregar Servicio Book
