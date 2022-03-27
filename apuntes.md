@@ -2939,13 +2939,937 @@ y errores de los servidores (500–599).
 
 ## Sección 12: Mentenimiento de la App con Angular
 ### 69. Crear Libro Service
-6 min
-   
+1. Generar componente **books** en proyecto **mi-web-app**:
+    + $ ng g c books --module app.module
+3. Crear modelo **mi-web-app\src\app\books\books.model.ts**:
+    ```ts
+    export interface Books {
+        libroId: number;
+        titulo: string;
+        descripcion: string;
+        precio: number;
+        fechaPublicacion?: Date;
+        autor: string;
+    }
+    ```
+4. Crear servicio **mi-web-app\src\app\books\books.service.ts**:
+    ```ts
+    import { Books } from './books.model';
+
+    export class BooksService {
+        private booksLista: Books[] = [
+            { libroId: 1, titulo: 'Algoritmos', descripcion: 'Libro básico', precio: 18, autor: 'Leticia Rodríguez'},
+            { libroId: 2, titulo: 'Angular', descripcion: 'Libro intermedio', precio: 25, autor: 'Isabel Bazó'},
+            { libroId: 3, titulo: 'Laravel', descripcion: 'Libro avanzado', precio: 30, autor: 'María Bazó'},
+            { libroId: 4, titulo: 'Node.js', descripcion: 'Todos los niveles', precio: 99, autor: 'Rebeca Bazó'}
+        ];
+    }
+    ```
+
+### 70. Agregar Servicio Book
+1. Modificar **mi-web-app\src\app\books\books.service.ts**:
+    ```ts
+    ≡
+    export class BooksService {
+        ≡
+
+        obtenerLibros() {
+            return this.booksLista.slice();
+        }
+    }
+    ```
+2. Registrar **BooksService** en **mi-web-app\src\app\app.module.ts**:
+    ```ts
+    ≡
+    import { BooksService } from './books/books.service';
+
+    @NgModule({
+        ≡
+        providers: [LibrosService, SeguridadService, BooksService],
+        ≡
+    })
+    ≡
+    ```
+3. Modificar **mi-web-app\src\app\books\books.component.ts**:
+    ```ts
+    import { Component, OnInit } from '@angular/core';
+    import { BooksService } from './books.service';
+    import { Books } from './books.model';
+
+    @Component({
+        selector: 'app-books',
+        templateUrl: './books.component.html',
+        styleUrls: ['./books.component.css']
+    })
+    export class BooksComponent implements OnInit {
+
+        bookData: Books[] = [];
+
+        constructor(private booksService: BooksService ) { }
+
+        ngOnInit(): void {
+            this.bookData = this.booksService.obtenerLibros();
+        }
+    }
+    ```
+
+### 71. Agregar Material Table
++ **Documentación**: https://material.angular.io/components/table/overview
+1. Importar **MatTableModule** en **mi-web-app\src\app\material.module.ts**:
+    ```ts
+    ≡
+    import { MatTableModule } from '@angular/material/table';
+
+    @NgModule({
+        imports: [
+            ≡
+            MatTableModule
+        ],
+        exports: [
+            ≡
+            MatTableModule
+        ],
+    })
+    ≡
+    ```
+2. Diseñar vista **mi-web-app\src\app\books\books.component.html**:
+    ```html
+    <mat-table [dataSource]="dataSource">
+        <ng-container matColumnDef="titulo">
+            <mat-header-cell *matHeaderCellDef>Título</mat-header-cell>
+            <mat-cell *matCellDef="let element">{{ element.titulo }}</mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="descripcion">
+            <mat-header-cell *matHeaderCellDef>Descripción</mat-header-cell>
+            <mat-cell *matCellDef="let element">{{ element.descripcion }}</mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="autor">
+            <mat-header-cell *matHeaderCellDef>Autor</mat-header-cell>
+            <mat-cell *matCellDef="let element">{{ element.autor }}</mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="precio">
+            <mat-header-cell *matHeaderCellDef>Precio</mat-header-cell>
+            <mat-cell *matCellDef="let element">{{ element.precio }}</mat-cell>
+        </ng-container>
+
+        <mat-header-row *matHeaderRowDef="desplegarColumnas"></mat-header-row>
+        <mat-row *matRowDef="let row, columns: desplegarColumnas"></mat-row>
+    </mat-table>
+    ```
+3. Modificar **mi-web-app\src\app\books\books.component.ts**:
+    ```ts
+    import { Component, OnInit } from '@angular/core';
+    import { BooksService } from './books.service';
+    import { Books } from './books.model';
+    import { MatTableDataSource } from '@angular/material/table';
+
+    @Component({
+        selector: 'app-books',
+        templateUrl: './books.component.html',
+        styleUrls: ['./books.component.css']
+    })
+    export class BooksComponent implements OnInit {
+
+        bookData: Books[] = [];
+
+        desplegarColumnas = ['titulo', 'descripcion', 'autor', 'precio'];
+        dataSource = new MatTableDataSource<Books>();
+
+        constructor(private booksService: BooksService ) { }
+
+        ngOnInit(): void {
+            /* this.bookData = this.booksService.obtenerLibros(); */
+            this.dataSource.data = this.booksService.obtenerLibros();
+        }
+
+    }
+    ```
+4. Agregar ruta **books** en **mi-web-app\src\app\app-routing.module.ts**:
+    ```ts
+    ≡
+    import { BooksComponent } from './books/books.component';
+
+    const routes: Routes = [
+        ≡
+        { path: 'books', component: BooksComponent }
+    ];
+    ≡
+    ```
+
+### 72. Ordenamiento en Tabla
++ **Documentación**: https://material.angular.io/components/sort/overview
+1. Importar **MatSortModule** en **mi-web-app\src\app\material.module.ts**:
+    ```ts
+    ≡
+   import { MatSortModule } from '@angular/material/sort';
+
+    @NgModule({
+        imports: [
+            ≡
+            MatSortModule
+        ],
+        exports: [
+            ≡
+            MatSortModule
+        ],
+    })
+    ≡
+    ```
+2. Modificar **mi-web-app\src\app\books\books.component.html**:
+    ```html
+    <mat-table [dataSource]="dataSource" matSort>
+        <ng-container matColumnDef="titulo">
+            <mat-header-cell *matHeaderCellDef mat-sort-header>Título</mat-header-cell>
+            <mat-cell *matCellDef="let element">{{ element.titulo }}</mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="descripcion">
+            <mat-header-cell *matHeaderCellDef mat-sort-header>Descripción</mat-header-cell>
+            <mat-cell *matCellDef="let element">{{ element.descripcion }}</mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="autor">
+            <mat-header-cell *matHeaderCellDef mat-sort-header>Autor</mat-header-cell>
+            <mat-cell *matCellDef="let element">{{ element.autor }}</mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="precio">
+            <mat-header-cell *matHeaderCellDef mat-sort-header>Precio</mat-header-cell>
+            <mat-cell *matCellDef="let element">{{ element.precio }}</mat-cell>
+        </ng-container>
+
+        <mat-header-row *matHeaderRowDef="desplegarColumnas"></mat-header-row>
+        <mat-row *matRowDef="let row, columns: desplegarColumnas"></mat-row>
+    </mat-table>
+    ```
+3. Modificar **mi-web-app\src\app\books\books.component.ts**:
+    ```ts
+    import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
+    import { BooksService } from './books.service';
+    import { Books } from './books.model';
+    import { MatTableDataSource } from '@angular/material/table';
+    import { MatSort } from '@angular/material/sort';
+
+    @Component({
+        selector: 'app-books',
+        templateUrl: './books.component.html',
+        styleUrls: ['./books.component.css']
+    })
+    export class BooksComponent implements OnInit, AfterViewInit {
+        bookData: Books[] = [];
+        desplegarColumnas = ['titulo', 'descripcion', 'autor', 'precio'];
+        dataSource = new MatTableDataSource<Books>();
+        @ViewChild(MatSort) ordenamiento: MatSort;
+
+        constructor(private booksService: BooksService ) { }
+
+        ngOnInit(): void {
+            /* this.bookData = this.booksService.obtenerLibros(); */
+            this.dataSource.data = this.booksService.obtenerLibros();
+        }
+
+        ngAfterViewInit() {
+            this.dataSource.sort = this.ordenamiento;
+        }
+    }
+    ```
+
+### 73. Filtros en Tabla
+1. Modificar **mi-web-app\src\app\books\books.component.html**:
+    ```html
+    <div fxLayoutAlign="center center">
+        <mat-form-field fxFlex="60%">
+            <input
+                matInput
+                type="text"
+                (keyup) = "hacerFiltro($any($event.target).value)"
+                placeholder="Ingrese texto para filtrar"
+            >
+        </mat-form-field>
+    </div>
+    ≡
+    ```
+2. Modificar **mi-web-app\src\app\books\books.component.ts**:
+    ```ts
+    import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
+    import { BooksService } from './books.service';
+    import { Books } from './books.model';
+    import { MatTableDataSource } from '@angular/material/table';
+    import { MatSort } from '@angular/material/sort';
+
+    @Component({
+        selector: 'app-books',
+        templateUrl: './books.component.html',
+        styleUrls: ['./books.component.css']
+    })
+    export class BooksComponent implements OnInit, AfterViewInit {
+        bookData: Books[] = [];
+        desplegarColumnas = ['titulo', 'descripcion', 'autor', 'precio'];
+        dataSource = new MatTableDataSource<Books>();
+        @ViewChild(MatSort) ordenamiento: MatSort;
+
+        constructor(private booksService: BooksService ) { }
+
+        hacerFiltro(filtro: string) {
+            this.dataSource.filter = filtro;
+        }
+
+        ngOnInit(): void {
+            /* this.bookData = this.booksService.obtenerLibros(); */
+            this.dataSource.data = this.booksService.obtenerLibros();
+        }
+
+        ngAfterViewInit() {
+            this.dataSource.sort = this.ordenamiento;
+        }
+    }
+    ```
+
+### 74. Paginacion en Tabla
+1. Importar **MatPaginatorModule** en **mi-web-app\src\app\material.module.ts**:
+    ```ts
+    ≡
+    import { MatPaginatorModule } from '@angular/material/paginator';
+
+    @NgModule({
+        imports: [
+            ≡
+            MatPaginatorModule
+        ],
+        exports: [
+            ≡
+            MatPaginatorModule
+        ],
+    })
+    ≡
+    ```
+2. Modificar **mi-web-app\src\app\books\books.component.html**:
+    ```html
+    ≡
+    <mat-paginator [pageSize]="2" [pageSizeOptions]="[2, 5, 10, 20]"></mat-paginator>
+    ```
+3. Modificar **mi-web-app\src\app\books\books.component.ts**:
+    ```ts
+    ≡
+    import { MatPaginator } from '@angular/material/paginator';
+    ≡
+    export class BooksComponent implements OnInit, AfterViewInit {
+        ≡
+        @ViewChild(MatSort) ordenamiento: MatSort;
+        @ViewChild(MatPaginator) paginacion: MatPaginator;
+        ≡
+        ngAfterViewInit() {
+            this.dataSource.sort = this.ordenamiento;
+            this.dataSource.paginator = this.paginacion;
+        }
+    }  
+    ```
+
+### 75. Boton flotante
+1. Modificar **mi-web-app\src\app\books\books.component.html**:
+    ```html
+    ≡
+    <button mat-fab id="boton-agregar" color="warn">
+        <mat-icon>add</mat-icon>
+    </button>
+    ```
+2. Modificar **mi-web-app\src\app\books\books.component.css**:
+    ```css
+    #boton-agregar{
+        right: 45px;
+        bottom: 45px;
+        left: auto;
+        position: absolute;
+    }
+    ```
+
+### 76. Crear Material Dialog
++ **Documentación**: https://material.angular.io/components/dialog/overview
+1. Importar **MatDialogModule** en **mi-web-app\src\app\material.module.ts**:
+    ```ts
+    ≡
+    import { MatDialogModule } from '@angular/material/dialog';
+
+    @NgModule({
+        imports: [
+            ≡
+            MatDialogModule
+        ],
+        exports: [
+            ≡
+            MatDialogModule
+        ],
+    })
+    ≡
+    ```
+2. Modificar **mi-web-app\src\app\books\books.component.ts**:
+    ```ts
+    ≡
+    import { MatDialog } from '@angular/material/dialog';
+    import { BookNuevoComponent } from './book-nuevo.compoenent';
+    ≡
+    export class BooksComponent implements OnInit, AfterViewInit {
+        ≡
+        constructor(private booksService: BooksService, private dialog: MatDialog) { }
+
+        hacerFiltro(filtro: string) {
+            this.dataSource.filter = filtro;
+        }
+
+        abrirDialog(){
+            this.dialog.open(BookNuevoComponent);
+        }
+        ≡
+    }
+    ```
+3. Modificar **mi-web-app\src\app\books\books.component.html**:
+    ```html
+    ≡
+    <button mat-fab id="boton-agregar" color="warn" (click)="abrirDialog()">
+        <mat-icon>add</mat-icon>
+    </button>
+    ```
+4. Crear componente **mi-web-app\src\app\books\book-nuevo.compoenent.ts**:
+    ```ts
+    import { Component } from '@angular/core';
+
+    @Component({
+        selector: 'app-book-nuevo',
+        template: `
+        <h1 mat-dialog-title>Agregar libro</h1>
+        <mat-dialog-actions>
+            <button mat-button [mat-dialog-close]="true">Cerrar</button>
+        </mat-dialog-actions>
+        `
+    })
+
+    export class BookNuevoComponent {}
+    ```
+5. Registrar el nuevo componente en **mi-web-app\src\app\app.module.ts**:
+    ```ts
+    ≡
+    import { BookNuevoComponent } from './books/book-nuevo.compoenent';
+
+    @NgModule({
+        declarations: [
+            ≡
+            BookNuevoComponent
+        ],
+        ≡
+        bootstrap: [AppComponent],
+        entryComponents: [BookNuevoComponent]
+    })
+    ≡
+    ```
+
+### 77. Crear Formulario Nuevo
++ **Documentación**: https://material.angular.io/components/select/overview
+1. Crear modal **mi-web-app\src\app\books\book-nuevo.compoenent.html**:
+    ```html
+    <h2 mat-dialog-title>Agregar libro</h2>
+
+    <mat-dialog-content>
+        <section fxLayoutAlign="center" style="margin-top: 10px; margin-bottom: 10px;">
+            <mat-card fxFlex="100%">
+                <form
+                    fxLayout="column"
+                    fxLayoutAlign="center center"
+                    fxLayoutGap="10px"
+                    #f="ngForm"
+                    (ngSubmit)="guardarLibro(f)"
+                >
+                    <mat-form-field style="width: 100%;">
+                        <mat-label>Título</mat-label>
+                        <input type="text" matInput placeholder="Ejm. Para Salvarte" name="titulo" ngModel required>
+                        <mat-error>El campo título es requerido</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field style="width: 100%;">
+                        <mat-label>Descripción</mat-label>
+                        <input type="text" matInput placeholder="Ejm. Libro importante para una mejor vida de piedad" name="descripcion" ngModel required>
+                        <mat-error>El campo descripción es requerido</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field style="width: 100%;">
+                        <mat-label>Precio</mat-label>
+                        <input type="text" matInput placeholder="Ejm. 9.99" name="precio" ngModel required>
+                        <mat-error>El campo precio es requerido</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field style="width: 100%;">
+                        <mat-label>Autor</mat-label>
+                        <mat-select [(ngModel)]="selectAutor" name="autor" required>
+                            <mat-option value="1">
+                                Leticia Rodríguez
+                            </mat-option>
+                            <mat-option value="2">
+                                Isabel Bazó
+                            </mat-option>
+                            <mat-option value="2">
+                                María Bazó
+                            </mat-option>
+                        </mat-select>
+                        <mat-error>El campo autor es requerido</mat-error>
+                    </mat-form-field>
+                </form>
+            </mat-card>
+        </section>
+    </mat-dialog-content>
+
+    <mat-dialog-actions>
+        <button mat-button [mat-dialog-close]="true">Cerrar</button>
+        <button mat-button>Guardar</button>
+    </mat-dialog-actions>
+    ```
+2. Modificar **mi-web-app\src\app\books\book-nuevo.compoenent.ts**:
+    ```ts
+    import { Component } from '@angular/core';
+    import { NgForm } from '@angular/forms';
+
+    @Component({
+        selector: 'app-book-nuevo',
+        templateUrl: './book-nuevo.compoenent.html'
+    })
+
+    export class BookNuevoComponent {
+        selectAutor: string;
+        guardarLibro(form: NgForm){
+
+        }
+    }
+    ```
+3. Importar **MatSelectModule** en **mi-web-app\src\app\material.module.ts**:
+    ```ts
+    ≡
+    import { MatSelectModule } from '@angular/material/select';
+
+    @NgModule({
+        imports: [
+            ≡
+            MatSelectModule
+        ],
+        exports: [
+            ≡
+            MatSelectModule
+        ],
+    })
+    ≡
+    ```
+4. Modificar **mi-web-app\src\app\books\books.component.ts**:
+    ```ts
+    ≡
+    abrirDialog(){
+        this.dialog.open(BookNuevoComponent, {
+            width: '350px'
+        });
+    }
+    ≡
+    ```
+
+### 78. Control Datepicker
+1. Importar **MatDatepickerModule** y **MatNativeDateModule** en **mi-web-app\src\app\material.module.ts**:
+    ```ts
+    ≡
+    import { MatDatepickerModule } from '@angular/material/datepicker';
+    import { MatNativeDateModule } from '@angular/material/core';
+
+    @NgModule({
+        imports: [
+            ≡
+            MatDatepickerModule,
+            MatNativeDateModule
+        ],
+        exports: [
+            ≡
+            MatDatepickerModule,
+            MatNativeDateModule
+        ],
+    })
+    ≡
+    ```
+2. Modificar **mi-web-app\src\app\books\book-nuevo.compoenent.html**:
+    ```html
+    ≡
+    <form
+        ≡
+    >
+        ≡
+
+        <mat-form-field style="width: 100%;">
+            <mat-label>Fecha de publicación</mat-label>
+            <input matInput placeholder="Seleccione fecha de publicación" [matDatepicker]="picker">
+            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+            <mat-datepicker #picker></mat-datepicker>
+        </mat-form-field>
+    </form>
+    ≡
+    ```
+3. Modificar **mi-web-app\src\app\books\book-nuevo.compoenent.ts**:
+    ```ts
+    import { Component, ViewChild } from '@angular/core';
+    import { NgForm } from '@angular/forms';
+    import { MatDatepicker } from '@angular/material/datepicker';
+
+    @Component({
+        selector: 'app-book-nuevo',
+        templateUrl: './book-nuevo.compoenent.html'
+    })
+
+    export class BookNuevoComponent {
+        selectAutor: string;
+        @ViewChild(MatDatepicker) picker: MatDatepicker<Date>;
+        guardarLibro(form: NgForm){
+
+        }
+    }
+    ```
+4. Definir formato de fecha por defecto en **mi-web-app\src\app\app.module.ts**:
+    ```ts
+    ≡
+    import { MAT_DATE_LOCALE } from '@angular/material/core';
+
+    @NgModule({
+        ≡
+        providers: [LibrosService, SeguridadService, BooksService, {provide: MAT_DATE_LOCALE, useValue: 'es-ES'}],
+        ≡
+    })
+    ≡
+    ```
+
+### 79. Guardar elemento en Angular
+1. Modificar **mi-web-app\src\app\books\books.service.ts**:
+    ```ts
+    ≡
+    import { Subject } from 'rxjs';
+
+    export class BooksService {
+        ≡
+        bookSubject = new Subject<Books>();
+
+        obtenerLibros() {
+            return this.booksLista.slice();
+        }
+
+        guardarLibro(book: Books){
+            this.booksLista.push(book);
+            this.bookSubject.next(book);
+        }
+    }
+    ```
+2. Modificar **mi-web-app\src\app\books\book-nuevo.compoenent.ts**:
+    ```ts
+    import { Component, ViewChild } from '@angular/core';
+    import { NgForm } from '@angular/forms';
+    import { MatOption } from '@angular/material/core';
+    import { MatDatepicker } from '@angular/material/datepicker';
+    import { MatSelectChange } from '@angular/material/select';
+    import { BooksService } from './books.service';
+
+    @Component({
+        selector: 'app-book-nuevo',
+        templateUrl: './book-nuevo.compoenent.html'
+    })
+
+    export class BookNuevoComponent {
+        selectAutor: string;
+        selectAutorTexto: string;
+        fechaPublicacion: string;
+
+        @ViewChild(MatDatepicker) picker: MatDatepicker<Date>;
+
+        constructor(private bookService: BooksService) {}
+
+        selected(event: MatSelectChange){
+            this.selectAutorTexto = (event.source.selected as MatOption).viewValue;
+        }
+
+        guardarLibro(form: NgForm){
+            this.bookService.guardarLibro({
+                libroId: 1,
+                descripcion: form.value.descripcion,
+                titulo: form.value.titulo,
+                autor: this.selectAutorTexto,
+                precio: form.value.precio,
+                fechaPublicacion: new Date(this.fechaPublicacion)
+            });
+        }
+    }
+    ```
+3. Modificar **mi-web-app\src\app\books\book-nuevo.compoenent.html**:
+    ```html
+    <form
+        #f="ngForm"
+        (ngSubmit)="guardarLibro(f)"
+    >
+        <h2 mat-dialog-title>Agregar libro</h2>
+
+        <mat-dialog-content>
+            <section fxLayoutAlign="center" style="margin-top: 10px; margin-bottom: 10px;">
+                <mat-card fxFlex="100%">
+                    <div
+                        fxLayout="column"
+                        fxLayoutAlign="center center"
+                        fxLayoutGap="10px"
+                    >
+                        <mat-form-field style="width: 100%;">
+                            <mat-label>Título</mat-label>
+                            <input type="text" matInput placeholder="Ejm. Para Salvarte" name="titulo" ngModel required>
+                            <mat-error>El campo título es requerido</mat-error>
+                        </mat-form-field>
+
+                        <mat-form-field style="width: 100%;">
+                            <mat-label>Descripción</mat-label>
+                            <input type="text" matInput placeholder="Ejm. Libro importante para una mejor vida de piedad" name="descripcion" ngModel required>
+                            <mat-error>El campo descripción es requerido</mat-error>
+                        </mat-form-field>
+
+                        <mat-form-field style="width: 100%;">
+                            <mat-label>Precio</mat-label>
+                            <input type="text" matInput placeholder="Ejm. 9.99" name="precio" ngModel required>
+                            <mat-error>El campo precio es requerido</mat-error>
+                        </mat-form-field>
+
+                        <mat-form-field style="width: 100%;">
+                            <mat-label>Autor</mat-label>
+                            <mat-select [(ngModel)]="selectAutor" name="autor" required (selectionChange)="selected($any($event))">
+                                <mat-option value="1">
+                                    Leticia Rodríguez
+                                </mat-option>
+                                <mat-option value="2">
+                                    Isabel Bazó
+                                </mat-option>
+                                <mat-option value="2">
+                                    María Bazó
+                                </mat-option>
+                            </mat-select>
+                            <mat-error>El campo autor es requerido</mat-error>
+                        </mat-form-field>
+
+                        <mat-form-field style="width: 100%;">
+                            <mat-label>Fecha de publicación</mat-label>
+                            <input matInput placeholder="Seleccione fecha de publicación" [matDatepicker]="picker" name="fechaPublicacion" [(ngModel)]="fechaPublicacion">
+                            <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                            <mat-datepicker #picker></mat-datepicker>
+                        </mat-form-field>
+                    </div>
+                </mat-card>
+            </section>
+        </mat-dialog-content>
+
+        <mat-dialog-actions>
+            <button mat-button [mat-dialog-close]="true">Cerrar</button>
+            <button mat-button type="submit">Guardar</button>
+        </mat-dialog-actions>
+    </form>
+    ```
+4. Modificar **mi-web-app\src\app\books\books.component.ts**:
+    ```ts
+    import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+    ≡
+    import { Subscription } from 'rxjs';
+    ≡
+    export class BooksComponent implements OnInit, AfterViewInit, OnDestroy {
+        bookData: Books[] = [];
+        desplegarColumnas = ['titulo', 'descripcion', 'autor', 'precio'];
+        dataSource = new MatTableDataSource<Books>();
+        @ViewChild(MatSort) ordenamiento: MatSort;
+        @ViewChild(MatPaginator) paginacion: MatPaginator;
+
+        private bookSubscription: Subscription;
+
+        constructor(private booksService: BooksService, private dialog: MatDialog) { }
+
+        hacerFiltro(filtro: string) {
+            this.dataSource.filter = filtro;
+        }
+
+        abrirDialog(){
+            this.dialog.open(BookNuevoComponent, {
+                width: '350px'
+            });
+        }
+
+        ngOnInit(): void {
+            /* this.bookData = this.booksService.obtenerLibros(); */
+            this.dataSource.data = this.booksService.obtenerLibros();
+            this.bookSubscription = this.booksService.bookSubject.subscribe(() => {
+                this.dataSource.data = this.booksService.obtenerLibros();
+            });
+        }
+
+        ngAfterViewInit() {
+            this.dataSource.sort = this.ordenamiento;
+            this.dataSource.paginator = this.paginacion;
+        }
+
+        ngOnDestroy() {
+            this.bookSubscription.unsubscribe();
+        }
+    }
+    ```
+
+### 80. Validacion de Formulario
+1. Modificar **mi-web-app\src\app\books\book-nuevo.compoenent.ts**:
+    ```ts
+    ≡
+    import { MatDialog } from '@angular/material/dialog';
+    ≡
+    export class BookNuevoComponent {
+        ≡
+        constructor(private bookService: BooksService, private dialogRef: MatDialog) {}
+        ≡
+        guardarLibro(form: NgForm){
+            if(form.valid){
+                this.bookService.guardarLibro({
+                    libroId: 1,
+                    descripcion: form.value.descripcion,
+                    titulo: form.value.titulo,
+                    autor: this.selectAutorTexto,
+                    precio: form.value.precio,
+                    fechaPublicacion: new Date(this.fechaPublicacion)
+                });
+                this.dialogRef.closeAll();
+            }
+        }
+    }
+    ```
+
+### 81. Crear Tabla para Listar Autores
+1. Generar componente **autores**:
+    + $ ng g c autores --module app.module
+2. Agregar ruta **autores** en **mi-web-app\src\app\app-routing.module.ts**:
+    ```ts
+    ≡
+    import { AutoresComponent } from './autores/autores.component';
+
+    const routes: Routes = [
+        ≡
+        { path: 'autores', component: AutoresComponent }
+    ];
+    ≡
+    ```
+3. Crear modelo **mi-web-app\src\app\autores\autor.model.ts**:
+    ```ts
+    export interface Autor {
+        autorId: number;
+        nombre: string;
+        apellido: string;
+        gradoAcademico: string;
+    }
+    ```
+4. Crear servicio **mi-web-app\src\app\autores\autores.service.ts**:
+    ```ts
+    import { Injectable } from "@angular/core";
+    import { Autor } from "./autor.model";
+
+    @Injectable({
+        providedIn: 'root'
+    })
+    export class AutoresService {
+        private autoresLista: Autor[] = [
+            { autorId: 1, nombre: 'Leticia', apellido: 'Rodríguez', gradoAcademico: 'Licenciada en Educación' },
+            { autorId: 2, nombre: 'Isabel', apellido: 'Bazó', gradoAcademico: 'Cineasta' },
+            { autorId: 3, nombre: 'María', apellido: 'Canelón', gradoAcademico: 'Ingeniero Informático' },
+            { autorId: 4, nombre: 'Rebeca', apellido: 'Robles', gradoAcademico: 'Licenciada en Computación' }
+        ];
+
+        obtenerAutores(){
+            return this.autoresLista.slice();
+        }
+    }
+    ```
+5. Diseñar **mi-web-app\src\app\autores\autores.component.html**:
+    ```html
+    <mat-table [dataSource]="dataSource">
+        <ng-container matColumnDef="nombre">
+            <mat-header-cell *matHeaderCellDef>Nombre</mat-header-cell>
+            <mat-cell *matCellDef="let element">{{ element.nombre }}</mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="apellido">
+            <mat-header-cell *matHeaderCellDef>Apellido</mat-header-cell>
+            <mat-cell *matCellDef="let element">{{ element.apellido }}</mat-cell>
+        </ng-container>
+
+        <ng-container matColumnDef="gradoAcademico">
+            <mat-header-cell *matHeaderCellDef>Grado Académico</mat-header-cell>
+            <mat-cell *matCellDef="let element">{{ element.gradoAcademico }}</mat-cell>
+        </ng-container>
+
+        <mat-header-row *matHeaderRowDef="desplegarColumnas"></mat-header-row>
+        <mat-row *matRowDef="let row; columns:desplegarColumnas"></mat-row>
+    </mat-table>
+    ```
+6. Programar **mi-web-app\src\app\autores\autores.component.ts**:
+    ```ts
+    import { Component, OnInit } from '@angular/core';
+    import { MatTableDataSource } from '@angular/material/table';
+    import { Autor } from './autor.model';
+    import { AutoresService } from './autores.service';
+
+    @Component({
+        selector: 'app-autores',
+        templateUrl: './autores.component.html',
+        styleUrls: ['./autores.component.css']
+    })
+    export class AutoresComponent implements OnInit {
+
+        desplegarColumnas = ['nombre', 'apellido', 'gradoAcademico'];
+        dataSource = new MatTableDataSource<Autor>();
+
+        constructor(private autoresService: AutoresService) { }
+
+        ngOnInit(): void {
+            this.dataSource.data = this.autoresService.obtenerAutores();
+        }
+
+    }
+    ```
+
+### 82. Agregar Select - Combobox
+1. Modificar **mi-web-app\src\app\books\book-nuevo.compoenent.html**:
+    ```html
+    ≡
+    <mat-form-field style="width: 100%;">
+        <mat-label>Autor</mat-label>
+        <mat-select [(ngModel)]="selectAutor" name="autor" required (selectionChange)="selected($any($event))">
+            <mat-option *ngFor="let autor of autores" value="autor.autorId">
+                {{ autor.nombre + ' ' +autor.apellido }}
+            </mat-option>
+        </mat-select>
+        <mat-error>El campo autor es requerido</mat-error>
+    </mat-form-field>
+    ≡
+    ```
+2. Modificar **mi-web-app\src\app\books\book-nuevo.compoenent.ts**:
+    ```ts
+    import { Component, OnInit, ViewChild } from '@angular/core';
+    ≡
+    import { Autor } from '../autores/autor.model';
+    import { AutoresService } from '../autores/autores.service';
+    ≡
+    export class BookNuevoComponent implements OnInit {
+        ≡
+        @ViewChild(MatDatepicker) picker: MatDatepicker<Date>;
+        autores: Autor[] = [];
+
+        constructor(private bookService: BooksService, private dialogRef: MatDialog, private autoresService: AutoresService) {}
+
+        ngOnInit() {
+            this.autores = this.autoresService.obtenerAutores();
+        }
+        ≡
+    }
+    ≡
+    ```
 
 
-
-
-
+## Sección 13: Integración con Backend
+### 83. Definicion de Url Base en Angular
+1 min
 
 
 
@@ -2959,41 +3883,6 @@ y errores de los servidores (500–599).
 
 
 
-
-
-
-
-### 70. Agregar Servicio Book
-6 min
-### 71. Agregar Material Table
-18 min
-### 72. Ordenamiento en Tabla
-5 min
-### 73. Filtros en Tabla
-5 min
-### 74. Paginacion en Tabla
-6 min
-### 75. Boton flotante
-3 min
-### 76. Crear Material Dialog
-11 min
-### 77. Crear Formulario Nuevo
-18 min
-### 78. Control Datepicker
-11 min
-### 79. Guardar elemento en Angular
-19 min
-### 80. Validacion de Formulario
-3 min
-### 81. Crear Tabla para Listar Autores
-19 min
-### 82. Agregar Select - Combobox
-7 min
-
-
-## Sección 13: Integración con Backend
-### 83. Definicion de Url Base en Angular
-1 min
 ### 84. Consultar data desde el servidor backend en Angular
 16 min
 ### 85. Agregar ngOndestroy

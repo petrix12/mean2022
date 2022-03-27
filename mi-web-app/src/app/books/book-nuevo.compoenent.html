@@ -1,0 +1,58 @@
+<form
+    #f="ngForm"
+    (ngSubmit)="guardarLibro(f)"
+>
+    <h2 mat-dialog-title>Agregar libro</h2>
+
+    <mat-dialog-content>
+        <section fxLayoutAlign="center" style="margin-top: 10px; margin-bottom: 10px;">
+            <mat-card fxFlex="100%">
+                <div
+                    fxLayout="column"
+                    fxLayoutAlign="center center"
+                    fxLayoutGap="10px"
+                >
+                    <mat-form-field style="width: 100%;">
+                        <mat-label>Título</mat-label>
+                        <input type="text" matInput placeholder="Ejm. Para Salvarte" name="titulo" ngModel required>
+                        <mat-error>El campo título es requerido</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field style="width: 100%;">
+                        <mat-label>Descripción</mat-label>
+                        <input type="text" matInput placeholder="Ejm. Libro importante para una mejor vida de piedad" name="descripcion" ngModel required>
+                        <mat-error>El campo descripción es requerido</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field style="width: 100%;">
+                        <mat-label>Precio</mat-label>
+                        <input type="text" matInput placeholder="Ejm. 9.99" name="precio" ngModel required>
+                        <mat-error>El campo precio es requerido</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field style="width: 100%;">
+                        <mat-label>Autor</mat-label>
+                        <mat-select [(ngModel)]="selectAutor" name="autor" required (selectionChange)="selected($any($event))">
+                            <mat-option *ngFor="let autor of autores" value="autor.autorId">
+                                {{ autor.nombre + ' ' +autor.apellido }}
+                            </mat-option>
+                        </mat-select>
+                        <mat-error>El campo autor es requerido</mat-error>
+                    </mat-form-field>
+
+                    <mat-form-field style="width: 100%;">
+                        <mat-label>Fecha de publicación</mat-label>
+                        <input matInput placeholder="Seleccione fecha de publicación" [matDatepicker]="picker" name="fechaPublicacion" [(ngModel)]="fechaPublicacion">
+                        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+                        <mat-datepicker #picker></mat-datepicker>
+                    </mat-form-field>
+                </div>
+            </mat-card>
+        </section>
+    </mat-dialog-content>
+
+    <mat-dialog-actions>
+        <button mat-button [mat-dialog-close]="true">Cerrar</button>
+        <button mat-button type="submit">Guardar</button>
+    </mat-dialog-actions>
+</form>
