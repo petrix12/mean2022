@@ -3836,7 +3836,7 @@ y errores de los servidores (500–599).
     <mat-form-field style="width: 100%;">
         <mat-label>Autor</mat-label>
         <mat-select [(ngModel)]="selectAutor" name="autor" required (selectionChange)="selected($any($event))">
-            <mat-option *ngFor="let autor of autores" value="autor.autorId">
+            <mat-option *ngFor="let autor of autores" [value]="autor.autorId">
                 {{ autor.nombre + ' ' +autor.apellido }}
             </mat-option>
         </mat-select>
@@ -3869,12 +3869,1195 @@ y errores de los servidores (500–599).
 
 ## Sección 13: Integración con Backend
 ### 83. Definicion de Url Base en Angular
-1 min
-
-
-
-
+1. Configurar servidor de desarrollo en **mi-web-app\src\environments\environment.ts**:
     ```ts
+    ≡
+    export const environment = {
+        production: false,
+        baseUrl: 'http://localhost:5000/'
+    };
+    ≡
+    ```
+
+### 84. Consultar data desde el servidor backend en Angular
+1. Importar **HttpClientModule** en **mi-web-app\src\app\app.module.ts**:
+    ```ts
+    ≡
+    import { HttpClientModule } from '@angular/common/http';
+
+    @NgModule({
+        ≡
+        imports: [
+            ≡
+            HttpClientModule
+        ],
+        ≡
+    })
+    ≡
+    ```
+2. Modificar **mi-web-app\src\app\autores\autores.service.ts**:
+    ```ts
+    import { Injectable } from '@angular/core';
+    import { Autor } from './autor.model';
+    import { environment } from './../../environments/environment';
+    import { HttpClient } from '@angular/common/http';
+    import { Subject } from 'rxjs';
+
+
+    @Injectable({
+        providedIn: 'root'
+    })
+    export class AutoresService{
+        baseUrl = environment.baseUrl;
+        private autoresLista: Autor[] = [];
+
+        private autoresSubject = new Subject<Autor[]>();
+
+        constructor(private http: HttpClient){}
+
+        obtenerAutores(){
+            this.http.get<Autor[]>(this.baseUrl + 'Autor')
+            .subscribe( (data) => {
+                this.autoresLista = data;
+                this.autoresSubject.next([...this.autoresLista]);
+            });
+        }
+
+        obtenerActualListener(){
+            return this.autoresSubject.asObservable();
+        }
+    }
+    ```
+3. Modificar **mi-web-app\src\app\autores\autores.component.ts**:
+    ```ts
+    import { Component, OnInit } from '@angular/core';
+    import { MatTableDataSource } from '@angular/material/table';
+    import { Autor } from './autor.model';
+    import { AutoresService } from './autores.service';
+
+    @Component({
+        selector: 'app-autores',
+        templateUrl: './autores.component.html',
+        styleUrls: ['./autores.component.css']
+    })
+    export class AutoresComponent implements OnInit {
+
+        desplegarColumnas = ['nombre', 'apellido', 'gradoAcademico'];
+        dataSource = new MatTableDataSource<Autor>();
+
+        constructor(private autoresService: AutoresService) { }
+
+        ngOnInit(): void {
+            this.autoresService.obtenerAutores();
+            this.autoresService.obtenerActualListener().subscribe((autores: Autor[]) => {
+                this.dataSource.data = autores;
+            });
+        }
+    }
+    ```
+
+### 85. Agregar ngOndestroy
+1. Modificar **mi-web-app\src\app\autores\autores.component.ts**:
+    ```ts
+    import { Component, OnInit, OnDestroy } from '@angular/core';
+    import { MatTableDataSource } from '@angular/material/table';
+    import { Subscription } from 'rxjs';
+    import { Autor } from './autor.model';
+    import { AutoresService } from './autores.service';
+
+    @Component({
+        selector: 'app-autores',
+        templateUrl: './autores.component.html',
+        styleUrls: ['./autores.component.css']
+    })
+    export class AutoresComponent implements OnInit, OnDestroy{
+
+        desplegarColumnas = ['nombre', 'apellido', 'gradoAcademico'];
+        dataSource = new MatTableDataSource<Autor>();
+
+        private autorSubscription: Subscription;
+
+        constructor(private autoresService: AutoresService) { }
+
+        ngOnInit(): void {
+            this.autoresService.obtenerAutores();
+            this.autorSubscription = this.autoresService.obtenerActualListener().subscribe((autores: Autor[]) => {
+                this.dataSource.data = autores;
+            });
+        }
+
+        ngOnDestroy() {
+            this.autorSubscription.unsubscribe();
+        }
+    }
+    ```
+
+### 86. Paginacion: Logica en Angular Services
+1. Crear modelo **mi-web-app\src\app\books\pagination-books.model.ts**:
+    ```ts
+    import { Books } from "./books.model";
+
+    export interface PaginationBoode{
+        pageSize: number;
+        page: number;
+        sort: string;
+        sortDirection: string;
+        pagesQuantity: number;
+        data: Books[];
+        filterValue: {};
+        totalRows: number;
+    }
+    ```
+2. Modificar servicio **mi-web-app\src\app\books\books.service.ts**:
+    ```ts
+    import { Books } from './books.model';
+    import { Subject } from 'rxjs';
+    import { environment } from '../../environments/environment';
+    import { HttpClient } from '@angular/common/http';
+    import { PaginationBooks } from './pagination-books.model';
+    import { Injectable } from '@angular/core';
+
+    @Injectable({
+        providedIn: 'root',
+    })
+    export class BooksService {
+        baseUrl = environment.baseUrl;
+
+        private booksLista: Books[] = [];
+
+        bookSubject = new Subject();
+
+        bookPagination: PaginationBooks;
+        bookPaginationSubject = new Subject<PaginationBooks>();
+
+        constructor(private http: HttpClient) {}
+
+        obtenerLibros(
+            libroPorPagina: number,
+            paginaActual: number,
+            sort: string,
+            sortDirection: string,
+            filterValue: any
+        ): void {
+            const request = {
+                pageSize: libroPorPagina,
+                page: paginaActual,
+                sort,
+                sortDirection,
+                filterValue,
+            };
+
+            this.http
+                .post<PaginationBooks>(this.baseUrl + 'api/Libro/Pagination', request)
+                .subscribe((response) => {
+                    this.bookPagination = response;
+                    this.bookPaginationSubject.next(this.bookPagination);
+                });
+        }
+
+        obtenerActualListener(): any {
+            return this.bookPaginationSubject.asObservable();
+        }
+
+        guardarLibro(book: Books): void {
+        /* this.http.post(this.baseUrl + 'Libro', book).subscribe((response) => {
+            this.bookSubject.next();
+        }); */
+        }
+
+        guardarLibroListener(): any {
+            return this.bookSubject.asObservable();
+        }
+    }
+    ```
+3. Modificar **mi-web-app\src\app\app.module.ts** para quitar el servicio **BooksService**:
+    ```ts
+    import { NgModule } from '@angular/core';
+    import { BrowserModule } from '@angular/platform-browser';
+    import { AppRoutingModule } from './app-routing.module';
+    import { AppComponent } from './app.component';
+    import { UsuarioComponent } from './usuario.component';
+    import { FormsModule } from '@angular/forms';
+    import { LibrosComponent } from './libros/libros.component';
+    import { LibroComponent } from './libro/libro.component';
+    import { LibrosService } from './services/libros.service';
+    import { InicioComponent } from './inicio.components';
+    import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+    import { MaterialModule } from './material.module';
+    import { RegistrarComponent } from './seguridad/registrar/registrar.component';
+    import { LoginComponent } from './seguridad/login/login.component';
+    import { FlexLayoutModule } from '@angular/flex-layout';
+    import { BarraComponent } from './navegacion/barra/barra.component';
+    import { MenuListaComponent } from './navegacion/menu-lista/menu-lista.component';
+    import { SeguridadService } from './seguridad/seguridad.service';
+    import { BooksComponent } from './books/books.component';
+    import { BookNuevoComponent } from './books/book-nuevo.compoenent';
+    import { MAT_DATE_LOCALE } from '@angular/material/core';
+    import { AutoresComponent } from './autores/autores.component';
+    import { HttpClientModule } from '@angular/common/http';
+
+    @NgModule({
+        declarations: [
+            AppComponent,
+            UsuarioComponent,
+            LibrosComponent,
+            LibroComponent,
+            InicioComponent,
+            RegistrarComponent,
+            LoginComponent,
+            BarraComponent,
+            MenuListaComponent,
+            BooksComponent,
+            BookNuevoComponent,
+            AutoresComponent
+        ],
+        imports: [
+            BrowserModule,
+            AppRoutingModule,
+            FormsModule,
+            BrowserAnimationsModule,
+            MaterialModule,
+            FlexLayoutModule,
+            HttpClientModule
+        ],
+        providers: [LibrosService, SeguridadService, {provide: MAT_DATE_LOCALE, useValue: 'es-ES'}],
+        bootstrap: [AppComponent],
+        entryComponents: [BookNuevoComponent]
+    })
+    export class AppModule { }
+    ```
++ **Nota**: en este punto el proyecto **mi-web-app** no debe compilar.
+
+### 87. Paginacion: Componente Angular
+1. Modificar **mi-web-app\src\app\books\books.component.ts**:
+    ```ts
+    import { AfterViewInit, Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+    import { BooksService } from './books.service';
+    import { Books } from './books.model';
+    import { MatTableDataSource } from '@angular/material/table';
+    import { MatSort } from '@angular/material/sort';
+    import { MatPaginator, PageEvent } from '@angular/material/paginator';
+    import { MatDialog } from '@angular/material/dialog';
+    import { BookNuevoComponent } from './book-nuevo.compoenent';
+    import { Subscription } from 'rxjs';
+    import { PaginationBooks } from './pagination-books.model';
+
+    @Component({
+        selector: 'app-books',
+        templateUrl: './books.component.html',
+        styleUrls: ['./books.component.css']
+    })
+    export class BooksComponent implements OnInit, AfterViewInit, OnDestroy {
+        bookData: Books[] = [];
+        desplegarColumnas = ['titulo', 'descripcion', 'autor', 'precio'];
+        dataSource = new MatTableDataSource<Books>();
+        @ViewChild(MatSort) ordenamiento: MatSort;
+        @ViewChild(MatPaginator) paginacion: MatPaginator;
+
+        private bookSubscription: Subscription;
+
+        totalLibros = 0;
+        librosPorPagina = 2;
+        paginaCombo = [1, 2, 5, 10];
+        paginaActual = 1;
+        sort = "titulo";
+        sortDirection = 'asc';
+        filterValue = null;
+
+        constructor(private booksService: BooksService, private dialog: MatDialog) { }
+        eventoPaginador(event: PageEvent) {
+            this.librosPorPagina = event.pageSize;
+            this.paginaActual = event.pageIndex + 1;
+            this.booksService.obtenerLibros(this.librosPorPagina, this.paginaActual, this.sort, this.sortDirection, this.filterValue);
+        }
+
+        hacerFiltro(filtro: string) {
+            this.dataSource.filter = filtro;
+        }
+
+        abrirDialog(){
+            this.dialog.open(BookNuevoComponent, {
+                width: '350px'
+            });
+        }
+
+        ngOnInit(): void {
+            this.booksService.obtenerLibros(
+                this.librosPorPagina,
+                this.paginaActual,
+                this.sort,
+                this.sortDirection,
+                this.filterValue
+            );
+            this.bookSubscription =  this.booksService
+                .obtenerActualListener()
+                .subscribe((pagination: PaginationBooks) => {
+                    this.dataSource = new MatTableDataSource<Books>(pagination.data);
+                    this.totalLibros = pagination.totalRows;
+                });
+        }
+
+        ngAfterViewInit() {
+            this.dataSource.sort = this.ordenamiento;
+            this.dataSource.paginator = this.paginacion;
+        }
+
+        ngOnDestroy() {
+            this.bookSubscription.unsubscribe();
+        }
+    }
+    ```
+2. Modificar **mi-web-app\src\app\books\books.component.html**:
+    ```html
+    ≡
+    <mat-paginator (page)="eventoPaginador($any($event))" #paginatcion [pageSize]="librosPorPagina" [pageSizeOptions]="paginaCombo" [length]="totalLibros"></mat-paginator>
+    ≡
+    ```
+
+### 88. Modelo para insertar nuevos registros con Angular
+1. Modificar modelo **mi-web-app\src\app\books\books.model.ts**:
+    ```ts
+    export interface Books {
+        id: string;
+        titulo: string;
+        descripcion: string;
+        precio: number;
+        fechaPublicacion?: Date;
+        autor: {
+            id: string,
+            nombreCompleto: string
+        };
+    }
+    ```
+2. Modificar servicio **mi-web-app\src\app\books\books.service.ts**:
+    ```ts
+    import { Books } from './books.model';
+    import { Subject } from 'rxjs';
+    import { environment } from '../../environments/environment';
+    import { HttpClient } from '@angular/common/http';
+    import { PaginationBooks } from './pagination-books.model';
+    import { Injectable } from '@angular/core';
+
+    @Injectable({
+        providedIn: 'root',
+    })
+    export class BooksService {
+        baseUrl = environment.baseUrl;
+
+        private booksLista: Books[] = [];
+
+        bookSubject = new Subject<Books>();
+
+        bookPagination: PaginationBooks;
+        bookPaginationSubject = new Subject<PaginationBooks>();
+
+        constructor(private http: HttpClient) {}
+
+        obtenerLibros(
+            libroPorPagina: number,
+            paginaActual: number,
+            sort: string,
+            sortDirection: string,
+            filterValue: any
+        ): void {
+            const request = {
+                pageSize: libroPorPagina,
+                page: paginaActual,
+                sort,
+                sortDirection,
+                filterValue,
+            };
+
+            this.http
+                .post<PaginationBooks>(this.baseUrl + 'api/Libro/Pagination', request)
+                .subscribe((response) => {
+                    this.bookPagination = response;
+                    this.bookPaginationSubject.next(this.bookPagination);
+                });
+        }
+
+        obtenerActualListener(): any {
+            return this.bookPaginationSubject.asObservable();
+        }
+
+        guardarLibro(book: Books): void {
+            this.http.post(this.baseUrl + 'api/libro', book).subscribe((response) => {
+                this.bookSubject.next(book);
+            });
+        }
+
+        guardarLibroListener(): any {
+            return this.bookSubject.asObservable();
+        }
+    }
+    ```
+3. Modificar **mi-web-app\src\app\books\book-nuevo.compoenent.ts**:
+    ```ts
+    import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+    import { NgForm } from '@angular/forms';
+    import { MatOption } from '@angular/material/core';
+    import { MatDatepicker } from '@angular/material/datepicker';
+    import { MatDialog } from '@angular/material/dialog';
+    import { MatSelectChange } from '@angular/material/select';
+    import { Subscription } from 'rxjs';
+    import { Autor } from '../autores/autor.model';
+    import { AutoresService } from '../autores/autores.service';
+    import { BooksService } from './books.service';
+
+    @Component({
+        selector: 'app-book-nuevo',
+        templateUrl: './book-nuevo.compoenent.html'
+    })
+
+    export class BookNuevoComponent implements OnInit, OnDestroy{
+        selectAutor: string;
+        selectAutorTexto: string;
+        fechaPublicacion: string;
+        @ViewChild(MatDatepicker) picker: MatDatepicker<Date>;
+        autores: Autor[] = [];
+        autorSubscription: Subscription;
+
+        constructor(private bookService: BooksService, private dialogRef: MatDialog, private autoresService: AutoresService) {}
+
+        ngOnInit() {
+            this.autoresService.obtenerAutores();
+            this.autorSubscription = this.autoresService.obtenerActualListener().subscribe((autoresBackend: Autor[]) => {
+                this.autores = autoresBackend;
+            });
+        }
+
+        selected(event: MatSelectChange){
+            this.selectAutorTexto = (event.source.selected as MatOption).viewValue;
+        }
+
+        guardarLibro(form: NgForm){
+            if(form.valid){
+                const autorRequest = {
+                    id: this.selectAutor,
+                    nombreCompleto: this.selectAutorTexto,
+                };
+                this.bookService.guardarLibro({
+                    id: null,
+                    descripcion: form.value.descripcion,
+                    titulo: form.value.titulo,
+                    autor: autorRequest,
+                    precio: form.value.precio,
+                    fechaPublicacion: new Date(this.fechaPublicacion)
+                });
+                this.dialogRef.closeAll();
+            }
+        }
+
+        ngOnDestroy() {
+            this.autorSubscription.unsubscribe();
+        }
+    }
+    ```
+
+### 89. Insertar nuevos registros con Angular y NodeJS
+1. Modificar **mi-web-app\src\app\books\books.component.ts**:
+    ```ts
+    ≡
+    abrirDialog(){
+        const dialogRef = this.dialog.open(BookNuevoComponent, {
+            width: '550px'
+        });
+
+        dialogRef.afterClosed().subscribe(() => {
+            this.booksService.obtenerLibros(
+                this.librosPorPagina,
+                this.paginaActual,
+                this.sort,
+                this.sortDirection,
+                this.filterValue
+            );
+        });
+    }
+    ≡
+    ```
+2. Modificar **mi-web-app\src\app\books\book-nuevo.compoenent.ts**:
+    ```ts
+    ≡
+    guardarLibro(form: NgForm){
+        if(form.valid){
+            const autorRequest = {
+                id: this.selectAutor,
+                nombreCompleto: this.selectAutorTexto
+            };
+            const libroRequest = {
+                id: null,
+                descripcion: form.value.descripcion,
+                titulo: form.value.titulo,
+                autor: autorRequest,
+                precio: parseInt(form.value.precio),
+                fechaPublicacion: new Date(this.fechaPublicacion)
+            };
+            this.bookService.guardarLibro(libroRequest);
+            this.autorSubscription = this.bookService.guardarLibroListener().subscribe(() => {
+                this.dialogRef.closeAll();
+            });
+        }
+    }
+    ≡
+    ```
+3. Modificar **mi-web-app\src\app\books\book-nuevo.compoenent.html**:
+    ```html
+    ≡
+    <mat-form-field style="width: 100%;">
+        <mat-label>Autor</mat-label>
+        <mat-select [(ngModel)]="selectAutor" name="autor" required (selectionChange)="selected($any($event))">
+            <mat-option *ngFor="let autor of autores" [value]="autor._id">
+                {{ autor.nombre + ' ' +autor.apellido }}
+            </mat-option>
+        </mat-select>
+        <mat-error>El campo autor es requerido</mat-error>
+    </mat-form-field>
+    ≡
+    ```
+4. Modificar **mi-web-app\src\app\autores\autor.model.ts**:
+    ```ts
+    export interface Autor {
+        _id: number;
+        ≡
+    }
+    ```
+
+### 90. Paginacion: Ordenar de forma ASC/DESC
+1. Modificar **mi-web-app\src\app\books\books.component.html**:
+    ```html
+    ≡
+    <mat-table [dataSource]="dataSource" matSort (matSortChange)="ordenarColumna($any($event))" >
+        ≡
+        <ng-container matColumnDef="autor">
+            <mat-header-cell *matHeaderCellDef mat-sort-header>Autor</mat-header-cell>
+            <mat-cell *matCellDef="let element">{{ element.autor.nombreCompleto }}</mat-cell>
+        </ng-container>
+        ≡
+    </mat-table>
+    ≡
+    ```
+2. Modificar **mi-web-app\src\app\books\books.component.ts**:
+    ```ts
+    ≡
+    eventoPaginador(event: PageEvent) {
+        this.librosPorPagina = event.pageSize;
+        this.paginaActual = event.pageIndex + 1;
+        this.booksService.obtenerLibros(this.librosPorPagina, this.paginaActual, this.sort, this.sortDirection, this.filterValue);
+    }
+
+    ordenarColumna(event): void {
+        this.sort = event.active;
+        this.sortDirection = event.direction;
+        this.booksService.obtenerLibros(
+            this.librosPorPagina,
+            this.paginaActual,
+            event.active,
+            event.direction,
+            this.filterValue
+        );
+    }
+    ≡
+    ```
+
+### 91. Paginacion: Busquedas con filtros
+1. Modificar **mi-web-app\src\app\books\books.component.html**:
+    ```ts
+    <div fxLayoutAlign="center center">
+        <mat-form-field fxFlex="60%">
+            <input
+                matInput
+                type="text"
+                (keyup) = "hacerFiltro($any($event))"
+                placeholder="Ingrese texto para filtrar"
+            >
+        </mat-form-field>
+    </div>
+    ≡
+    ```
+2. Modificar **mi-web-app\src\app\books\books.component.ts**:
+    ```ts
+    ≡
+    export class BooksComponent implements OnInit, AfterViewInit, OnDestroy {
+        timeout: any = null;
+        bookData: Books[] = [];
+        desplegarColumnas = ['titulo', 'descripcion', 'autor', 'precio'];
+        dataSource = new MatTableDataSource<Books>();
+        @ViewChild(MatSort) ordenamiento: MatSort;
+        @ViewChild(MatPaginator) paginacion: MatPaginator;
+
+        private bookSubscription: Subscription;
+
+        totalLibros = 0;
+        librosPorPagina = 2;
+        paginaCombo = [1, 2, 5, 10];
+        paginaActual = 1;
+        sort = "titulo";
+        sortDirection = 'asc';
+        filterValue = null;
+
+        constructor(private booksService: BooksService, private dialog: MatDialog) { }
+
+        eventoPaginador(event: PageEvent): void {
+            this.librosPorPagina = event.pageSize;
+            this.paginaActual = event.pageIndex + 1;
+            this.booksService.obtenerLibros(this.librosPorPagina, this.paginaActual, this.sort, this.sortDirection, this.filterValue);
+        }
+
+        ordenarColumna(event): void {
+            this.sort = event.active;
+            this.sortDirection = event.direction;
+            this.booksService.obtenerLibros(
+                this.librosPorPagina,
+                this.paginaActual,
+                event.active,
+                event.direction,
+                this.filterValue
+            );
+        }
+
+        hacerFiltro(event: any): void {
+            clearTimeout(this.timeout);
+            const $this = this;
+
+            this.timeout = setTimeout( () => {
+                if (event.keyCode !== 13) {
+                    const filterValueLocal = {
+                        propiedad: 'titulo',
+                        valor: event.target.value,
+                    };
+
+                    $this.filterValue = filterValueLocal;
+
+                    $this.booksService.obtenerLibros(
+                        $this.librosPorPagina,
+                        $this.paginaActual,
+                        $this.sort,
+                        $this.sortDirection,
+                        filterValueLocal
+                    );
+                }
+            }, 1000);
+        }
+
+        abrirDialog(): void {
+            const dialogRef = this.dialog.open(BookNuevoComponent, {
+                width: '550px'
+            });
+
+            dialogRef.afterClosed().subscribe(() => {
+                this.booksService.obtenerLibros(
+                    this.librosPorPagina,
+                    this.paginaActual,
+                    this.sort,
+                    this.sortDirection,
+                    this.filterValue
+                );
+            });
+        }
+
+        ngOnInit(): void {
+            this.booksService.obtenerLibros(
+                this.librosPorPagina,
+                this.paginaActual,
+                this.sort,
+                this.sortDirection,
+                this.filterValue
+            );
+            this.bookSubscription =  this.booksService
+                .obtenerActualListener()
+                .subscribe((pagination: PaginationBooks) => {
+                    this.dataSource = new MatTableDataSource<Books>(pagination.data);
+                    this.totalLibros = pagination.totalRows;
+                });
+        }
+
+        ngAfterViewInit(): void  {
+            this.dataSource.sort = this.ordenamiento;
+            this.dataSource.paginator = this.paginacion;
+        }
+
+        ngOnDestroy(): void  {
+            this.bookSubscription.unsubscribe();
+        }
+    }
+    ```
+
+
+## Sección 14: Node Seguridad
+### 92. Seguridad en NodeJS
++ https://regexlib.com
+1. Crear modelo **BackendNode\models\Usuario.js**:
+    ```js
+    const mongoose = require('mongoose')
+
+    const UsuarioSchema = new mongoose.Schema({
+        nombre: {
+            type: String,
+            required: [true, 'El nombre es requerido']
+        },
+        apellido: {
+            type: String,
+            required: [true, 'El apellido es requerido']
+        },
+        userName: {
+            type: String,
+            required: [true, 'El userName es requerido']
+        },
+        email: {
+            type: String,
+            required: [true, 'El email es requerido'],
+            unique: true,
+            match: [
+                /^\w+[\w-\.]*\@\w+((-\w+)|(\w*))\.[a-z]{2,3}$/,
+                'Ingrese un email validos'
+            ]
+        },
+        password: {
+            type: String,
+            required: [true, 'El password es requerido'],
+            minlength: 6,
+            select: false
+        }
+    })
+
+    module.exports = mongoose.model('Usuario', UsuarioSchema)
+    ```
+
+### 93. Creacion de Controllers y Rutas
+1. Crear controlador **BackendNode\controllers\usuario.js**:
+    ```js
+    exports.registrarUsuario = (req, res, next) => {
+        res.status(200).json({status: 200})
+    }
+
+    exports.login = (req, res, next) => {
+        res.status(200).json({status: 200})
+    }
+
+    exports.getUsuario = (req, res, next) => {
+        res.status(200).json({status: 200})
+    }
+    ```
+2. Crear archivo de rutas **BackendNode\rutas\usuario.js**:
+    ```js
+    const express = require('express')
+    const ruta = express.Router()
+    const { 
+        registrarUsuario, 
+        login, 
+        getUsuario
+    } = require('../controllers/usuario')
+
+    ruta.get('/', getUsuario)
+    ruta.post('/registrar', registrarUsuario)
+    ruta.post('/login', login)
+
+    module.exports = ruta
+    ```
+3. Registrar rutas en **BackendNode\server.js**:
+    ```js
+    ≡
+    const libro = require('./rutas/libro')
+    const autor = require('./rutas/autor')
+    const usuario = require('./rutas/usuario')
+    ≡
+    app.use('/api/libreriaautor', autor)
+    app.use('/api/libro', libro)
+    app.use('/usuario', usuario)
+    ≡
+    ```
+4. Realizar petición http:
+    + Método: GET
+    + URL: localhost:5000/usuario
+
+### 94. Registrar Nuevos Usuarios
+1. Modificar controlador **BackendNode\controllers\usuario.js**:
+    ```js
+    const Usuario = require("../models/Usuario")
+    const ErrorResponse = require("../helper/errorResponse")
+
+    exports.registrarUsuario = async(req, res, next) => {
+        try {
+            const { nombre, apellido, username, email, password } = req.body;
+            const usrBD = await Usuario.create({
+                nombre,
+                apellido,
+                userName: username,
+                email,
+                password
+            })
+
+            res.status(200).json({status: 200})
+        
+        } catch (err) {
+            next(new ErrorResponse("Error registrando usuario" + err, 400));
+        }
+    }
+    ≡
+    ```
+2. Realizar petición http:
+    + Método: POST
+    + URL: localhost:5000/usuario/registrar
+    + Body:
+        ```json
+        {
+            "nombre": "Pedro",
+            "apellido": "Prueba 1",
+            "username": "petrix",
+            "email": "prueba1@gmail.com",
+            "password": "123456"
+        }
+        ```
+
+### 95. Encriptar password
+1. Instalar **bcryptjs** en el proyecto **BackendNode**:
+    + $ npm install bcryptjs
+2. Modificar modelo **BackendNode\models\Usuario.js**:
+    ```js
+    ≡
+    const bcrypt = require('bcryptjs')
+
+    const UsuarioSchema = new mongoose.Schema({
+        ≡
+    })
+
+    UsuarioSchema.pre('save', async function(next) {
+        const salt = await bcrypt.genSalt(10)
+        this.password = await bcrypt.hash(this.password, salt)
+    })
+    ≡
+    ```
+3. Realizar petición http:
+    + Método: POST
+    + URL: localhost:5000/usuario/registrar
+    + Body:
+        ```json
+        {
+            "nombre": "Pedro",
+            "apellido": "Prueba 2",
+            "username": "petrix",
+            "email": "prueba2@gmail.com",
+            "password": "123456"
+        }
+        ```
+
+### 96. Crear JsonWebToken
++ **Documentación JsonWebToken (JWT)**: https://jwt.io
+1. Instalar **JsonWebToken** en **BackendNode**:
+    + $ npm install jsonwebtoken
+2. Modificar **BackendNode\models\Usuario.js**:
+    ```js
+    ≡
+    const jwt = require('jsonwebtoken')
+    ≡
+    UsuarioSchema.methods.crearJsonWebToken = function() {
+        return jwt.sign({ username: this.userName }, process.env.JWT_SECRET_WORD, {
+            expiresIn: process.env.JWT_EXPIRE
+        })
+    }
+
+    module.exports = mongoose.model('Usuario', UsuarioSchema)
+    ```
+3. Agregar palabra secreta (**JWT_SECRET_WORD**) en **BackendNode\config\config.env**:
+    ```env
+    ≡
+    JWT_SECRET_WORD=PalabraSecreta
+    JWT_EXPIRE=60d
+    ```
+4. Modificar controlador **BackendNode\controllers\usuario.js**:
+    ```js
+    ≡
+    exports.registrarUsuario = async (req, res, next) => {
+    try {
+        const {
+            nombre,
+            apellido,
+            username,
+            email,
+            password
+        } = req.body;
+        const usrBD = await Usuario.create({
+            nombre,
+            apellido,
+            userName: username,
+            email,
+            password,
+        });
+
+        const token = usrBD.crearJsonWebToken();
+
+        res.status(200).json({
+            status: 200,
+            id: usrBD._id,
+            nombre,
+            apellido,
+            username,
+            email,
+            token,
+        });
+    } catch (err) {
+        next(new ErrorResponse("Error registrando usuario" + err, 400));
+    }
+    };
+    ≡
+    ```
+5. Realizar petición http:
+    + Método: POST
+    + URL: localhost:5000/usuario/registrar
+    + Body:
+        ```json
+        {
+            "nombre": "Pedro",
+            "apellido": "Prueba 3",
+            "username": "petrix",
+            "email": "prueba3@gmail.com",
+            "password": "123456"
+        }
+        ```
+
+### 97. Login en NodeJS
+1. Modificar **BackendNode\models\Usuario.js**:
+    ```js
+    ≡
+    UsuarioSchema.methods.validarPassword = async function (passwordUsuario) {
+        return await bcrypt.compare(passwordUsuario, this.password)
+    }
+
+    module.exports = mongoose.model('Usuario', UsuarioSchema)
+    ```
+2. Modificar **BackendNode\controllers\usuario.js**:
+    ```js
+    ≡
+    exports.login = async (req, res, next) => {
+        try {
+            const { email, password } = req.body
+        
+            if (!email || !password) {
+                return next(new ErrorResponse("Ingrese un email y un password", 400));
+            }
+        
+            const usuarioBD = await Usuario.findOne({ email }).select("+password");
+        
+            if (!usuarioBD) {
+                return next(new ErrorResponse("El usuario no existe en la base de datos", 400));
+            }
+        
+            const valorBool = await usuarioBD.validarPassword(password);
+        
+            if (!valorBool) {
+                return next(new ErrorResponse("Las credenciales son incorrectas", 400));
+            }
+        
+            const token = usuarioBD.crearJsonWebToken();
+        
+            res.status(200).json({
+                status: 200,
+                id: usuarioBD._id,
+                nombre: usuarioBD.nombre,
+                apellido: usuarioBD.apellido,
+                username: usuarioBD.userName,
+                email: usuarioBD.email,
+                token
+            });
+        } catch (err) {
+            next(new ErrorResponse("Error en el login" + err, 400));
+        } 
+    }
+    ≡
+    ```
+3. Realizar petición http:
+    + Método: POST
+    + URL: localhost:5000/usuario/login
+    + Body:
+        ```json
+        {
+            "email": "prueba3@gmail.com",
+            "password": "123456"
+        }
+        ```
+
+### 98. Middleware de seguridad
+1. Crear middleware **BackendNode\middleware\seguridad.js**:
+    ```js
+    const ErrorResponse = require("../helper/errorResponse")
+    const jwt = require("jsonwebtoken")
+    const Usuario = require("../models/Usuario")
+
+    exports.seguridad = async (req, res, next) => {
+        let token;
+
+        if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+            token = req.headers.authorization.split(" ")[1]
+        }
+
+        if (!token) {
+            return  next(new ErrorResponse("El cliente no envio el token", 400))
+        }
+
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET_WORD);
+            console.log("token", decoded);
+
+            const usuarioBD = await Usuario.findOne({ userName: decoded.username });
+
+            req.usuario = usuarioBD;
+
+            next()
+        } catch (err) {
+            return next( new ErrorResponse("Errores en el procesamiento del token " + err, 400));
+        }
+    }
+    ```
+
+### 99. Implementar seguridad en Rutas y Controllers
+1. Añadir seguridad al archivo de rutas **BackendNode\rutas\libro.js**:
+    ```js
+    const { Router } = require('express')
+    const express = require('express')
+    const ruta = express.Router()
+    const { seguridad } = require('../middleware/seguridad')
+
+    const { 
+        getLibros, 
+        getLibroById, 
+        crearLibro, 
+        updateLibro, 
+        deleteLibro,
+        pagination
+    } = require('../controllers/libro')
+
+    ruta
+        .route('/')
+        .get(seguridad, getLibros)
+        .post(seguridad, crearLibro)
+
+    ruta
+        .route('/:id')
+        .get(seguridad, getLibroById)
+        .put(seguridad, updateLibro)
+        .delete(seguridad, deleteLibro)
+
+    ruta
+        .route('/pagination')
+        .post(seguridad, pagination)
+
+    module.exports = ruta
+    ```
+2. Añadir seguridad al archivo de rutas **BackendNode\rutas\autor.js**:
+    ```js
+    const { Router } = require('express')
+    const express = require('express')
+    const ruta = express.Router()
+    const { seguridad } = require('../middleware/seguridad')
+
+    const {
+        crearAutor,
+        getAutor,
+        getAutorById,
+        updateAutor,
+        deleteAutor
+    } = require('../controllers/autor')
+
+    ruta
+        .route('/')
+        .post(seguridad, crearAutor)
+        .get(seguridad, getAutor)
+
+    ruta
+        .route('/:id')
+        .get(seguridad, getAutorById)
+        .put(seguridad, updateAutor)
+        .delete(seguridad, deleteAutor)
+
+    module.exports = ruta
+    ```
+3. Añadir seguridad al archivo de rutas **BackendNode\rutas\usuario.js**:
+    ```js
+    const express = require('express')
+    const ruta = express.Router()
+    const { seguridad } = require('../middleware/seguridad')
+
+    const { 
+        registrarUsuario, 
+        login, 
+        getUsuario
+    } = require('../controllers/usuario')
+
+    ruta.get('/', seguridad, getUsuario)
+    ruta.post('/registrar', registrarUsuario)
+    ruta.post('/login', login)
+
+    module.exports = ruta
+    ```
+4. Modificar **BackendNode\controllers\usuario.js**:
+    ```js
+    ≡
+    exports.getUsuario = async (req, res, next) => {
+        res.status(200).json({status: 200})
+
+        try {
+            const usuarioToken = req.usuario;
+        
+            const token = await usuarioToken.crearJsonWebToken();
+        
+            res.status(200).json({
+                status: 200,
+                id: usuarioToken._id,
+                nombre: usuarioToken.nombre,
+                apellido: usuarioToken.apellido,
+                username: usuarioToken.userName,
+                email: usuarioToken.email,
+                token,
+            })
+        } catch (err) {
+            next(new ErrorResponse("Error obteniendo la sesion del usuario " + err, 400));
+        }
+    }
+    ```
+5. Realizar petición http:
+    + Método: POST
+    + URL: localhost:5000/usuario/login
+    + Body:
+        ```json
+        {
+            "email": "prueba3@gmail.com",
+            "password": "123456"
+        }
+        ```
+6. Obtener el response de la petición anterior:
+    ```json
+    {
+        "status": 200,
+        "id": "62430a177990a7efb50f320c",
+        "nombre": "Pedro",
+        "apellido": "Prueba 3",
+        "username": "petrix",
+        "email": "prueba3@gmail.com",
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InBldHJpeCIsImlhdCI6MTY0ODU2MjkwMiwiZXhwIjoxNjUzNzQ2OTAyfQ.htE1qQ07ZGyKnajgsOdulaWQU-61bU2YGWn-Ee2pPFA"
+    }
+    ```
+7. Realizar petición http:
+    + Método: GET
+    + URL: localhost:5000/usuario
+    + Body:
+        ```json
+        {
+            "email": "prueba3@gmail.com",
+            "password": "123456"
+        }
+        ```
+
+
+## Sección 15: Angular: Implementar Seguridad
+### 100. Seguridad en Componentes Angular
+9 min
+
+
+
+
+
+
+    ```js
     ≡
     ≡
     ```
@@ -3883,45 +5066,6 @@ y errores de los servidores (500–599).
 
 
 
-### 84. Consultar data desde el servidor backend en Angular
-16 min
-### 85. Agregar ngOndestroy
-3 min
-### 86. Paginacion: Logica en Angular Services
-15 min
-### 87. Paginacion: Componente Angular
-14 min
-### 88. Modelo para insertar nuevos registros con Angular
-12 min
-### 89. Insertar nuevos registros con Angular y NodeJS
-14 min
-### 90. Paginacion: Ordenar de forma ASC/DESC
-10 min
-### 91. Paginacion: Busquedas con filtros
-13 min
-
-
-## Sección 14: Node Seguridad
-### 92. Seguridad en NodeJS
-8 min
-### 93. Creacion de Controllers y Rutas
-8 min
-### 94. Registrar Nuevos Usuarios
-12 min
-### 95. Encriptar password
-7 min
-### 96. Crear JsonWebToken
-14 min
-### 97. Login en NodeJS
-16 min
-### 98. Middleware de seguridad
-14 min
-### 99. Implementar seguridad en Rutas y Controllers
-11 min
-
-## Sección 15: Angular: Implementar Seguridad
-### 100. Seguridad en Componentes Angular
-9 min
 ### 101. Interceptor Http en Angular para JWT
 22 min
 ### 102. Seguridad en JWT y Sesion de Usuarios
@@ -3931,4 +5075,9 @@ y errores de los servidores (500–599).
 
 ## Comandos comunes
 + Ejecutar proyecto Angular:
+    + $ cd mi-web-app
     + $ ng serve
++ Ejecutar servidor de prueba:
+    + $ cd BackendNode
+    + $ nodemon server
+

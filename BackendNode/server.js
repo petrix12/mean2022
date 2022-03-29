@@ -10,6 +10,7 @@ connectDatabase()
 
 const libro = require('./rutas/libro')
 const autor = require('./rutas/autor')
+const usuario = require('./rutas/usuario')
 
 const app = express()
 app.use(express.json())
@@ -21,6 +22,7 @@ if(process.env.NODE_ENV === 'development'){
 
 app.use('/api/libreriaautor', autor)
 app.use('/api/libro', libro)
+app.use('/usuario', usuario)
 
 app.use(errorHandler)
 
