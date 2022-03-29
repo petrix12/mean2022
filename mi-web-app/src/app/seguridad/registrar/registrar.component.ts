@@ -5,11 +5,10 @@ import { SeguridadService } from '../seguridad.service';
 @Component({
     selector: 'app-registrar',
     templateUrl: './registrar.component.html',
-    styleUrls: ['./registrar.component.css']
+    styleUrls: ['./registrar.component.css'],
 })
 export class RegistrarComponent implements OnInit {
-
-    constructor(private seguridadService: SeguridadService) { }
+    constructor(private seguridadService: SeguridadService) {}
 
     ngOnInit(): void {}
 
@@ -18,10 +17,11 @@ export class RegistrarComponent implements OnInit {
         this.seguridadService.registrarUsuario({
             email: form.value.email,
             password: form.value.password,
-            apellidos: form.value.apellidos,
+            apellido: form.value.apellido,
             nombre: form.value.nombre,
             username: form.value.username,
-            usuarioId: ''
+            usuarioId: '',
+            token: ''
         });
     }
 }

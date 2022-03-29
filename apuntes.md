@@ -2598,7 +2598,8 @@ y errores de los servidores (500–599).
                 apellidos: form.value.apellidos,
                 nombre: form.value.nombre,
                 username: form.value.username,
-                usuarioId: ''
+                usuarioId: '',
+                token: ''
             });
         }
     }
@@ -2718,18 +2719,38 @@ y errores de los servidores (500–599).
 
         }
 
-        registrarUsuario(usr: Usuario){
-            this.usuario = {
-                email: usr.email,
-                usuarioId: Math.round(Math.random() * 10000).toString(),
-                nombre: usr.nombre,
-                apellidos: usr.apellidos,
-                username: usr.username,
-                password: ''
+    registrarUsuario(usr: Usuario): void {
+        this.http
+            .post<Usuario>(this.baseUrl + 'usuario/registrar', usr)
+            .subscribe((response) => {
+                this.token = response.token;
+                this.usuario = {
+                    email: response.email,
+                    nombre: response.nombre,
+                    apellidos: response.apellidos,
+                    token: response.token,
+                    password: '',
+                    username: response.username,
+                    usuarioId: response.usuarioId
             };
             this.seguridadCambio.next(true);
+            localStorage.setItem('token', response.token);
             this.router.navigate(['/']);
-        }
+        });
+
+        // this.usuario = {
+        //   email: usr.email,
+        //   usuarioId: Math.round(Math.random() * 10000).toString(),
+        //   nombre: usr.nombre,
+        //   apellidos: usr.apellidos,
+        //   username: usr.username,
+        //   password: '',
+        //   token: ''
+        // };
+
+        // this.seguridadCambio.next(true);
+        // this.router.navigate(['/']);
+    }
 
         login(loginData: LoginData){
             this.usuario = {
@@ -4811,7 +4832,7 @@ y errores de los servidores (500–599).
             "apellido": "Prueba 3",
             "username": "petrix",
             "email": "prueba3@gmail.com",
-            "password": "123456"
+            "password": "1234567"
         }
         ```
 
@@ -4872,7 +4893,7 @@ y errores de los servidores (500–599).
         ```json
         {
             "email": "prueba3@gmail.com",
-            "password": "123456"
+            "password": "1234567"
         }
         ```
 
@@ -5021,7 +5042,7 @@ y errores de los servidores (500–599).
         ```json
         {
             "email": "prueba3@gmail.com",
-            "password": "123456"
+            "password": "1234567"
         }
         ```
 6. Obtener el response de la petición anterior:
@@ -5043,34 +5064,456 @@ y errores de los servidores (500–599).
         ```json
         {
             "email": "prueba3@gmail.com",
-            "password": "123456"
+            "password": "1234567"
         }
         ```
 
 
 ## Sección 15: Angular: Implementar Seguridad
 ### 100. Seguridad en Componentes Angular
-9 min
-
-
-
-
-
-
-    ```js
+1. Modificar **mi-web-app\src\app\seguridad\seguridad.service.ts**:
+    ```ts
     ≡
     ≡
     ```
+2. Quitar el provider **SeguridadService** en **mi-web-app\src\app\app.module.ts**:
+    ```ts
+    import { NgModule } from '@angular/core';
+    import { BrowserModule } from '@angular/platform-browser';
+    import { AppRoutingModule } from './app-routing.module';
+    import { AppComponent } from './app.component';
+    import { UsuarioComponent } from './usuario.component';
+    import { FormsModule } from '@angular/forms';
+    import { LibrosComponent } from './libros/libros.component';
+    import { LibroComponent } from './libro/libro.component';
+    import { LibrosService } from './services/libros.service';
+    import { InicioComponent } from './inicio.components';
+    import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+    import { MaterialModule } from './material.module';
+    import { RegistrarComponent } from './seguridad/registrar/registrar.component';
+    import { LoginComponent } from './seguridad/login/login.component';
+    import { FlexLayoutModule } from '@angular/flex-layout';
+    import { BarraComponent } from './navegacion/barra/barra.component';
+    import { MenuListaComponent } from './navegacion/menu-lista/menu-lista.component';
+    import { BooksComponent } from './books/books.component';
+    import { BookNuevoComponent } from './books/book-nuevo.compoenent';
+    import { MAT_DATE_LOCALE } from '@angular/material/core';
+    import { AutoresComponent } from './autores/autores.component';
+    import { HttpClientModule } from '@angular/common/http';
 
-
-
-
+    @NgModule({
+        declarations: [
+            AppComponent,
+            UsuarioComponent,
+            LibrosComponent,
+            LibroComponent,
+            InicioComponent,
+            RegistrarComponent,
+            LoginComponent,
+            BarraComponent,
+            MenuListaComponent,
+            BooksComponent,
+            BookNuevoComponent,
+            AutoresComponent
+        ],
+        imports: [
+            BrowserModule,
+            AppRoutingModule,
+            FormsModule,
+            BrowserAnimationsModule,
+            MaterialModule,
+            FlexLayoutModule,
+            HttpClientModule
+        ],
+        providers: [LibrosService, {provide: MAT_DATE_LOCALE, useValue: 'es-ES'}],
+        bootstrap: [AppComponent],
+        entryComponents: [BookNuevoComponent]
+    })
+    export class AppModule { }
+    ```
 
 ### 101. Interceptor Http en Angular para JWT
-22 min
+1. Crear archivo **mi-web-app\src\app\seguridad\seguridad-interceptor.ts**:
+    ```ts
+    import { HttpHandler, HttpInterceptor, HttpRequest } from '@angular/common/http';
+    import { Injectable } from '@angular/core';
+    import { SeguridadService } from './seguridad.service';
+
+    @Injectable()
+    export class SeguridadInterceptor implements HttpInterceptor {
+        constructor(private seguridadService: SeguridadService) {}
+
+        intercept(req: HttpRequest<any>, next: HttpHandler) {
+            const tokenSeguridad = this.seguridadService.obtenerToken();
+            const request = req.clone({
+                headers: req.headers.set('Authorization', 'Bearer ' + tokenSeguridad)
+            });
+
+            return next.handle(request);
+        }
+    }
+    ```
+2. Modificar **mi-web-app\src\app\seguridad\seguridad.service.ts**:
+    ```ts
+    ≡
+    login(loginData: LoginData): void {
+        this.http.post<Usuario>(this.baseUrl + 'usuario/login', loginData).subscribe((response) => {
+            console.log('Login respuesta: ', response);
+            this.token = response.token;
+            this.usuario = {
+                email: response.email,
+                nombre: response.nombre,
+                apellidos: response.apellidos,
+                token: response.token,
+                password: '',
+                username: response.username,
+                usuarioId: response.usuarioId,
+            };
+            this.seguridadCambio.next(true);
+            this.router.navigate(['/']);
+        })
+    }
+    ≡
+    ```
+3. Agregar el provider **HTTP_INTERCEPTORS** en **mi-web-app\src\app\app.module.ts**:
+    ```ts
+    ≡
+    import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
+    import { SeguridadInterceptor } from './seguridad/seguridad-interceptor';
+
+    @NgModule({
+        ≡
+        providers: [{ provide: HTTP_INTERCEPTORS, useClass: SeguridadInterceptor, multi: true }, LibrosService, {provide: MAT_DATE_LOCALE, useValue: 'es-ES'}],
+        ≡
+    })
+    ≡
+    ```
+4. Agregar la propiedad **token** al modelo **mi-web-app\src\app\seguridad\usuario.model.ts**:
+    ```ts
+    export interface Usuario {
+        nombre: string;
+        apellidos: string;
+        username: string;
+        email: string;
+        usuarioId: string;
+        password: string;
+        token: string;
+    }
+    ```
++ **Nota**: en este punto no compila la aplicación angular.
+
 ### 102. Seguridad en JWT y Sesion de Usuarios
-16 min
+1. Modificar **mi-web-app\src\app\app-routing.module.ts**:
+    ```ts
+    ≡
+    const routes: Routes = [
+        { path: '', component: InicioComponent, canActivate: [SeguridadRouter] },
+        { path: 'libros', component: LibrosComponent },
+        { path: 'registrar', component: RegistrarComponent },
+        { path: 'login', component: LoginComponent },
+        { path: 'books', component: BooksComponent, canActivate: [SeguridadRouter] },
+        { path: 'autores', component: AutoresComponent, canActivate: [SeguridadRouter] }
+    ];
+    ≡
+    ```
+2. Modificar **mi-web-app\src\app\seguridad\seguridad.service.ts**:
+    ```ts
+    import { Subject } from 'rxjs';
+    import { Usuario } from './usuario.model';
+    import { LoginData } from './login-data.model';
+    import { Router } from '@angular/router';
+    import { Injectable } from '@angular/core';
+    import { environment } from 'src/environments/environment';
+    import { HttpClient } from '@angular/common/http';
+
+    @Injectable({
+        providedIn: 'root',
+    })
+    export class SeguridadService {
+        private token: string;
+        baseUrl = environment.baseUrl;
+        seguridadCambio = new Subject<boolean>();
+        private usuario: Usuario;
+
+        cargardUsuario(): void {
+            const tokenBrowser = localStorage.getItem('token');
+            if(!tokenBrowser) {
+                return;
+            }
+
+            this.token = tokenBrowser;
+            this.seguridadCambio.next(true);
+
+            this.http
+            .get<Usuario>(this.baseUrl + 'usuario')
+            .subscribe((response) => {
+                console.log('Login respuesta: ', response);
+                this.token = response.token;
+                this.usuario = {
+                    email: response.email,
+                    nombre: response.nombre,
+                    apellidos: response.apellidos,
+                    token: response.token,
+                    password: '',
+                    username: response.username,
+                    usuarioId: response.usuarioId,
+                };
+                this.seguridadCambio.next(true);
+                localStorage.setItem('token', response.token);
+            });
+        }
+
+        obtenerToken(): string {
+        return this.token;
+        }
+
+        constructor(private router: Router, private http: HttpClient) {}
+
+        registrarUsuario(usr: Usuario): void {
+            this.http
+                .post<Usuario>(this.baseUrl + 'usuario/registrar', usr)
+                .subscribe((response) => {
+                    this.token = response.token;
+                    this.usuario = {
+                        email: response.email,
+                        nombre: response.nombre,
+                        apellidos: response.apellidos,
+                        token: response.token,
+                        password: '',
+                        username: response.username,
+                        usuarioId: response.usuarioId
+                };
+                this.seguridadCambio.next(true);
+                localStorage.setItem('token', response.token);
+                this.router.navigate(['/']);
+            });
+
+            // this.usuario = {
+            //   email: usr.email,
+            //   usuarioId: Math.round(Math.random() * 10000).toString(),
+            //   nombre: usr.nombre,
+            //   apellidos: usr.apellidos,
+            //   username: usr.username,
+            //   password: '',
+            //   token: ''
+            // };
+
+            // this.seguridadCambio.next(true);
+            // this.router.navigate(['/']);
+        }
+
+
+        login(loginData: LoginData): void {
+            this.http
+            .post<Usuario>(this.baseUrl + 'usuario/login', loginData)
+            .subscribe((response) => {
+                console.log('Login respuesta: ', response);
+                this.token = response.token;
+                this.usuario = {
+                    email: response.email,
+                    nombre: response.nombre,
+                    apellidos: response.apellidos,
+                    token: response.token,
+                    password: '',
+                    username: response.username,
+                    usuarioId: response.usuarioId,
+                };
+                this.seguridadCambio.next(true);
+                localStorage.setItem('token', response.token);
+                this.router.navigate(['/']);
+            });
+        }
+
+        salirSesion() {
+        this.usuario = null;
+        this.seguridadCambio.next(false);
+        localStorage.removeItem('token');
+        this.router.navigate(['/login']);
+        }
+
+        obtenerUsuario() {
+        return { ...this.usuario };
+        }
+
+        onSesion() {
+        return this.token != null;
+        }
+    }
+    ```
+3. Modificar **mi-web-app\src\app\app.component.ts**:
+    ```ts
+    import { Component, OnInit } from '@angular/core';
+    import { SeguridadService } from './seguridad/seguridad.service';
+
+    @Component({
+        selector: 'app-root',
+        templateUrl: './app.component.html',
+        styleUrls: ['./app.component.css']
+    })
+    export class AppComponent implements OnInit {
+        abrirMenu = false;
+        constructor(private seguridadService: SeguridadService) {}
+        ngOnInit(): void {
+            this.seguridadService.cargardUsuario();
+        }
+    }
+    ```
+
 ### 103. Registrar Nuevos Usuarios
+1. Modificar **mi-web-app\src\app\seguridad\seguridad.service.ts**:
+    ```ts
+    import { Subject } from 'rxjs';
+    import { Usuario } from './usuario.model';
+    import { LoginData } from './login-data.model';
+    import { Router } from '@angular/router';
+    import { Injectable } from '@angular/core';
+    import { environment } from 'src/environments/environment';
+    import { HttpClient } from '@angular/common/http';
+
+    @Injectable({
+        providedIn: 'root',
+    })
+    export class SeguridadService {
+        private token: string;
+        baseUrl = environment.baseUrl;
+        seguridadCambio = new Subject<boolean>();
+        private usuario: Usuario;
+
+        cargardUsuario(): void {
+            const tokenBrowser = localStorage.getItem('token');
+            if(!tokenBrowser) {
+                return;
+            }
+
+            this.token = tokenBrowser;
+            this.seguridadCambio.next(true);
+
+            this.http
+            .get<Usuario>(this.baseUrl + 'usuario')
+            .subscribe((response) => {
+                console.log('Login respuesta: ', response);
+                this.token = response.token;
+                this.usuario = {
+                    email: response.email,
+                    nombre: response.nombre,
+                    apellido: response.apellido,
+                    token: response.token,
+                    password: '',
+                    username: response.username,
+                    usuarioId: response.usuarioId,
+                };
+                this.seguridadCambio.next(true);
+                localStorage.setItem('token', response.token);
+            });
+        }
+
+        obtenerToken(): string {
+        return this.token;
+        }
+
+        constructor(private router: Router, private http: HttpClient) {}
+
+        registrarUsuario(usr: Usuario): void {
+            this.http
+                .post<Usuario>(this.baseUrl + 'usuario/registrar', usr)
+                .subscribe((response) => {
+                    this.token = response.token;
+                    this.usuario = {
+                        email: response.email,
+                        nombre: response.nombre,
+                        apellido: response.apellido,
+                        token: response.token,
+                        password: '',
+                        username: response.username,
+                        usuarioId: response.usuarioId
+                };
+                this.seguridadCambio.next(true);
+                localStorage.setItem('token', response.token);
+                this.router.navigate(['/']);
+            });
+
+            // this.usuario = {
+            //   email: usr.email,
+            //   usuarioId: Math.round(Math.random() * 10000).toString(),
+            //   nombre: usr.nombre,
+            //   apellidos: usr.apellidos,
+            //   username: usr.username,
+            //   password: '',
+            //   token: ''
+            // };
+
+            // this.seguridadCambio.next(true);
+            // this.router.navigate(['/']);
+        }
+
+
+        login(loginData: LoginData): void {
+            this.http
+            .post<Usuario>(this.baseUrl + 'usuario/login', loginData)
+            .subscribe((response) => {
+                console.log('Login respuesta: ', response);
+                this.token = response.token;
+                this.usuario = {
+                    email: response.email,
+                    nombre: response.nombre,
+                    apellido: response.apellido,
+                    token: response.token,
+                    password: '',
+                    username: response.username,
+                    usuarioId: response.usuarioId,
+                };
+                this.seguridadCambio.next(true);
+                localStorage.setItem('token', response.token);
+                this.router.navigate(['/']);
+            });
+        }
+
+        salirSesion() {
+        this.usuario = null;
+        this.seguridadCambio.next(false);
+        localStorage.removeItem('token');
+        this.router.navigate(['/login']);
+        }
+
+        obtenerUsuario() {
+        return { ...this.usuario };
+        }
+
+        onSesion() {
+        return this.token != null;
+        }
+    }
+    ```
+2. Modificar **mi-web-app\src\app\seguridad\usuario.model.ts**:
+    ```ts
+    export interface Usuario {
+        nombre: string;
+        apellido: string;
+        username: string;
+        email: string;
+        usuarioId: string;
+        password: string;
+        token: string;
+    }
+    ```
+3. Modificar **mi-web-app\src\app\seguridad\registrar\registrar.component.ts**:
+    ```ts
+    ≡
+    registrarUsuario(form: NgForm) {
+        console.log(form);
+        this.seguridadService.registrarUsuario({
+            email: form.value.email,
+            password: form.value.password,
+            apellido: form.value.apellidos,
+            nombre: form.value.nombre,
+            username: form.value.username,
+            usuarioId: '',
+            token: ''
+        });
+    }
+    ≡
+    ```
++ **Nota**: revisar la barra lateral y el menú de nevagación para que invoque el menú apropiado según el estado del usuario.
 
 
 ## Comandos comunes

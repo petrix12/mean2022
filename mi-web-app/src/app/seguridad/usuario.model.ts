@@ -1,9 +1,10 @@
 export interface Usuario {
     nombre: string;
-    apellidos: string;
+    apellido: string;
     username: string;
     email: string;
     usuarioId: string;
     password: string;
+    token: string;
 }
 
